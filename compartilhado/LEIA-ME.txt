@@ -1,0 +1,35 @@
+Compartilhado do Kanban (opcional, off por padrao)
+==================================================
+
+No computador HOST:
+1. Rode Subir Kanban (sobe a pagina na porta 8765).
+2. Abra Parâmetros → "Gerar chave e ativar".
+   Isso gera a chave E inicia o serviço neste PC (porta 8777).
+3. Clique em "Copiar chave" e envie a mesma chave aos convidados.
+4. Na aba Compartilhado, entre com seu nome e a chave (neste PC você vira host automaticamente).
+
+Nos convidados:
+1. Abram a URL do host (http://IP-DO-HOST:8765/kanban-ti-visivel-demo/).
+   Convidado NAO precisa instalar Python — só o host.
+2. Aba Compartilhado → nome + chave recebida → Entrar.
+   Nome é livre (pode corrigir depois). A cadeira segue o ID interno do navegador.
+   Título/cores da sala vêm do host (convidado não edita parâmetros da sala).
+   Sua sala (se você for host noutro PC) e o Individual NÃO se misturam com esta sala.
+   IMPORTANTE: ter a chave NAO vira host. Host = so o PC que ativou a sala.
+   Reset, backup, importar/exportar e limpar arquivados so funcionam nesse PC.
+
+Para desligar:
+- Nos Parametros do host: "Desligar neste PC", ou
+- Atalho Parar Kanban / Parar compartilhado.
+
+Arquivos:
+- dados\quadro.sqlite     → quadro compartilhado
+- dados\chave-host.txt    → chave gerada (nao precisa abrir no Explorer)
+- backup\                 → copias automaticas no host
+
+Limites e rede:
+- Ate cerca de 15 pessoas no compartilhado.
+- So o host exporta, importa e volta o quadro ao padrao (cards + arquivados).
+- A pasta backup\ fica ilesa nesse reset (copias anteriores permanecem).
+- Porta 8777 no host (API); pagina na 8765.
+- Convidados usam o IP do host na LAN.

@@ -1,0 +1,3943 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Quadro Kanban de TI fictício da Demonstração, para portfólio. Dados inventados. Sem backend.">
+  <meta name="theme-color" content="#1F497D">
+  <title>Kanban TI Visível — Demonstração</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F497D'/%3E%3Crect x='6' y='8' width='6' height='16' rx='1' fill='%23FFE5E5'/%3E%3Crect x='13' y='8' width='6' height='16' rx='1' fill='%23FFF2CC'/%3E%3Crect x='20' y='8' width='6' height='10' rx='1' fill='%23D5E8D4'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --azul: #1F497D;
+      --texto: #1c2833;
+      --muted: #3d4c5c;
+      --vermelho: #c0392b;
+      --fundo: #e8edf2;
+      --card: #ffffff;
+      --texto-cabecalho: #ffffff;
+      --fonte: "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--fonte);
+      color: var(--texto);
+      background: var(--fundo);
+    }
+
+    header {
+      background: var(--azul);
+      color: var(--texto-cabecalho);
+      padding: 16px 22px 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    header .cabecalho-textos {
+      min-width: 0;
+      flex: 1;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1rem, 1.7vw, 1.35rem);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 0.92rem;
+      opacity: 0.9;
+    }
+
+    header .btn-desligar-geral {
+      flex-shrink: 0;
+      align-self: center;
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--texto-cabecalho);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    header .btn-desligar-geral:hover {
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    body.tv-mode header .btn-desligar-geral {
+      display: none !important;
+    }
+
+    #tela-desligada {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: rgba(6, 10, 16, 0.92);
+      color: #e8eef5;
+      text-align: center;
+      backdrop-filter: blur(2px);
+    }
+
+    body.app-desligada #tela-desligada {
+      display: flex;
+    }
+
+    body.app-desligada {
+      overflow: hidden;
+    }
+
+    #tela-desligada strong {
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+    }
+
+    #tela-desligada p {
+      margin: 0;
+      max-width: 28rem;
+      font-size: 0.95rem;
+      opacity: 0.88;
+      line-height: 1.45;
+    }
+
+    .linha-cor {
+      display: grid;
+      grid-template-columns: 1fr 52px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .linha-cor input[type="color"] {
+      width: 52px;
+      height: 38px;
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    .regras {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px 22px;
+      background: #fff;
+      border-bottom: 1px solid #d5dee8;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    #resumo { font-weight: 650; color: var(--azul); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 22px 0;
+    }
+
+    button, .arquivo {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 8px 14px;
+    }
+
+    button { border: 0; }
+
+    .btn-primario { background: var(--azul); color: #fff; }
+
+    .btn-secundario {
+      background: #fff;
+      color: var(--azul);
+      border: 1px solid #b7c6d6;
+    }
+
+    .btn-secundario.perigo { color: var(--vermelho); }
+
+    .toolbar button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .status-save {
+      margin-left: auto;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    :focus-visible {
+      outline: 3px solid #e1b012;
+      outline-offset: 2px;
+    }
+
+    .board {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(210px, 1fr));
+      gap: 12px;
+      padding: 12px 22px 18px;
+      align-items: stretch;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: inset 0 0 0 1px rgba(31, 73, 125, 0.08);
+    }
+
+    .column.drag-over { box-shadow: inset 0 0 0 3px var(--azul); }
+
+    .column.no-limite { box-shadow: inset 0 0 0 2px var(--vermelho); }
+
+    .column.estouro { box-shadow: inset 0 0 0 3px var(--vermelho); }
+
+    .col-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 6px 6px 8px;
+    }
+
+    .col-head h2 {
+      margin: 0;
+      font-size: 0.82rem;
+      letter-spacing: 0.03em;
+      line-height: 1.25;
+    }
+
+    .col-head p {
+      margin: 4px 0 0;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .contador {
+      flex: 0 0 auto;
+      min-width: 2.6rem;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--texto);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+
+    .contador.limite,
+    .contador.estouro {
+      background: var(--vermelho);
+      color: #fff;
+    }
+
+    .cards {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 72px;
+    }
+
+    .vazio {
+      margin: 8px 4px;
+      padding: 14px 10px;
+      border: 1px dashed rgba(31, 73, 125, 0.28);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 2px rgba(20, 40, 60, 0.12);
+      cursor: grab;
+      border-left: 4px solid transparent;
+    }
+
+    .card:active { cursor: grabbing; }
+
+    .card.dragging { opacity: 0.45; }
+
+    .card.alta { border-left-color: var(--vermelho); }
+
+    .card.baixa { border-left-color: #5d6d7e; }
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.alta { background: var(--vermelho); color: #fff; }
+
+    .badge.baixa { background: #5d6d7e; color: #fff; }
+
+    .card h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 650;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .quem {
+      margin: 8px 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 12px 18px 16px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #4a5562;
+      background: #f7f9fb;
+      border-top: 1px solid #d5dee8;
+    }
+
+    [hidden] { display: none !important; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 32, 51, 0.48);
+    }
+
+    .dialogo {
+      width: min(440px, 100%);
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 16px 40px rgba(15, 32, 51, 0.28);
+    }
+
+    .dialogo h2 { margin: 0 0 6px; font-size: 1.15rem; color: var(--azul); }
+
+    .dialogo .nota { margin: 0 0 14px; color: var(--muted); font-size: 0.88rem; }
+
+    #campo-solicitante.campo-travado {
+      background: #eef2f6;
+      color: #3d4c5c;
+      cursor: not-allowed;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 0.86rem;
+      font-weight: 650;
+    }
+
+    input, select {
+      display: block;
+      width: 100%;
+      margin-top: 4px;
+      padding: 8px 10px;
+      font: inherit;
+      border: 1px solid #b7c6d6;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+
+    .dialogo.parametros {
+      width: min(560px, 100%);
+      max-height: min(92vh, 720px);
+      overflow: auto;
+    }
+
+    .dialogo.parametros fieldset {
+      border: 1px solid #d5dee8;
+      border-radius: 8px;
+      margin: 0 0 12px;
+      padding: 10px 12px 4px;
+    }
+
+    .dialogo.parametros legend {
+      padding: 0 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--azul);
+    }
+
+    .check-linha {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 0 0 12px;
+      font-weight: 650;
+      font-size: 0.9rem;
+    }
+
+    .check-linha input {
+      width: auto;
+      margin: 3px 0 0;
+      flex: 0 0 auto;
+    }
+
+    .aviso-param {
+      margin: 0 0 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .relogio-status {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f0f4f8;
+      color: var(--texto);
+      font-size: 0.9rem;
+      font-weight: 650;
+      min-height: 1.4em;
+    }
+
+    .relogio-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .alerta-visual {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      animation: pisca-alerta 0.5s steps(1) infinite;
+    }
+
+    .alerta-barra {
+      position: fixed;
+      left: 50%;
+      top: 18px;
+      transform: translateX(-50%);
+      z-index: 70;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--vermelho);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    @keyframes pisca-alerta {
+      0%, 49% { background: rgba(192, 57, 43, 0.28); }
+      50%, 100% { background: rgba(255, 255, 255, 0.08); }
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 40;
+      max-width: min(560px, calc(100% - 24px));
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #1c2833;
+      color: #fff;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .meta-card {
+      margin: 6px 0 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+
+    .card-acoes {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .card-acoes button {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 650;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #b7c6d6;
+      background: #f4f7fa;
+      color: var(--azul);
+      cursor: pointer;
+    }
+
+    .card-acoes button.perigo {
+      color: var(--vermelho);
+      border-color: #e0b4ae;
+      background: #fdf2f0;
+    }
+
+    body.tv-mode .card-acoes { display: none; }
+
+    .dialogo.arquivados {
+      width: min(640px, 100%);
+      max-height: min(88vh, 720px);
+      overflow: auto;
+    }
+
+    .lista-arquivados {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lista-arquivados li {
+      border: 1px solid #d5dee8;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .lista-arquivados h3 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+    }
+
+    .lista-arquivados .meta-card { margin: 2px 0; }
+
+    .lista-arquivados .acoes { margin-top: 8px; justify-content: flex-start; }
+
+    .badge.sla {
+      background: var(--vermelho);
+      color: #fff;
+      margin-left: 4px;
+    }
+
+    .modo-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 8px 22px 0;
+      flex-wrap: wrap;
+    }
+
+    .modo-tabs button[aria-pressed="true"] {
+      background: var(--azul);
+      color: #fff;
+      border-color: var(--azul);
+    }
+
+    .modo-tabs button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .painel-online {
+      min-width: 180px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: inset 0 0 0 1px rgba(31, 73, 125, 0.12);
+    }
+
+    .painel-online h2 {
+      margin: 0 0 8px;
+      font-size: 0.82rem;
+      color: var(--azul);
+    }
+
+    .painel-online li {
+      font-size: 0.8rem;
+      margin: 0 0 6px;
+      color: var(--texto);
+    }
+
+    body.tv-mode header p,
+    body.tv-mode .regras,
+    body.tv-mode .toolbar,
+    body.tv-mode .modo-tabs,
+    body.tv-mode footer,
+    body.tv-mode #painel-compartilhado-login {
+      display: none !important;
+    }
+
+    body.tv-mode .board {
+      grid-template-columns: repeat(5, minmax(180px, 1fr));
+      padding-top: 8px;
+    }
+
+    body.tv-mode .card {
+      font-size: 1.05rem;
+      pointer-events: none;
+    }
+
+    body.tv-mode #btn-sair-tv {
+      display: inline-flex !important;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 50;
+    }
+
+    #btn-sair-tv { display: none; }
+
+    .relatorio-caixa {
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88rem;
+      background: #f7f9fb;
+      border: 1px solid #d5dee8;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    #area-compartilhada {
+      display: none;
+      grid-template-columns: minmax(0, 1fr) 200px;
+      gap: 12px;
+      padding: 0 22px 18px;
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    #board-comp.board {
+      flex: unset;
+      width: 100%;
+      min-height: 460px;
+      padding: 12px 0 0;
+      overflow-x: auto;
+    }
+
+    body.modo-compartilhado #board { display: none; }
+    body.modo-compartilhado #area-compartilhada { display: grid; }
+    body.modo-compartilhado #painel-compartilhado-login { display: flex; }
+    body.modo-individual #area-compartilhada { display: none; }
+    body.modo-individual #painel-compartilhado-login { display: none !important; }
+
+    @media (max-width: 1100px) {
+      .board {
+        grid-template-columns: repeat(5, 250px);
+        overflow-x: auto;
+      }
+
+      .status-save { margin-left: 0; width: 100%; }
+
+      #area-compartilhada {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="tela-desligada" role="status" aria-live="polite" hidden>
+    <strong>Kanban desligado</strong>
+    <p>Sessões e serviços encerrados neste PC. O quadro nos arquivos continua.<br>Para voltar, use o atalho Subir Kanban (Windows) ou Subir-Kanban.command (Mac).</p>
+  </div>
+  <header>
+    <div class="cabecalho-textos">
+      <h1 id="texto-titulo">KANBAN TI VISÍVEL - Demonstração - Portfólio Renato</h1>
+      <p id="texto-subtitulo">Modelo 50 pessoas independentes acessando por computador ou instalado individual por computador</p>
+    </div>
+    <button type="button" class="btn-desligar-geral" id="btn-desligar-geral" hidden title="Encerra só a aplicação Kanban neste PC (página e compartilhado). Não desliga o Windows/Mac. Quadro nos arquivos continua.">Desligar</button>
+  </header>
+
+  <div class="regras">
+    <span id="texto-regras">Priorizado no máximo 3 · Em execução no máximo 2 · No limite, ou acima, o contador fica vermelho. O estouro continua visível.</span>
+    <span id="resumo"></span>
+  </div>
+
+  <div class="modo-tabs" role="tablist" aria-label="Modo do quadro">
+    <button type="button" class="btn-secundario" id="tab-individual" aria-pressed="true">Individual</button>
+    <button type="button" class="btn-secundario" id="tab-compartilhado" aria-pressed="false" title="Entre com nome + chave. Se a sala for de outro PC, abra a URL dele (http://IP:8765). Convidado não precisa de Python.">Compartilhado</button>
+  </div>
+
+  <div class="toolbar" id="toolbar-individual">
+    <button type="button" class="btn-primario" id="btn-novo">+ Novo card</button>
+    <button type="button" class="btn-secundario" id="btn-exportar" title="Baixa um arquivo com a cópia deste quadro para enviar a outra pessoa">Salvar cópia do quadro</button>
+    <button type="button" class="btn-secundario" id="btn-importar" title="Abre um arquivo de cópia e substitui o quadro deste navegador">Trazer cópia</button>
+    <button type="button" class="btn-secundario" id="btn-relatorio" title="Gera texto de 5 linhas para a diretoria">Relatório 5 linhas</button>
+    <button type="button" class="btn-secundario" id="btn-arquivados" title="Cards descartados do quadro">Arquivados</button>
+    <button type="button" class="btn-secundario perigo" id="btn-limpar-dados" title="Manda todos os cards do Individual para Arquivados (como Descartar); parâmetros ficam">Limpar dados</button>
+    <button type="button" class="btn-secundario" id="btn-tv" title="Tela grande só leitura">Modo TV</button>
+    <button type="button" class="btn-secundario" id="btn-relogio" title="Alarme e timer simples neste navegador">Alarme / Timer</button>
+    <button type="button" class="btn-secundario" id="btn-parametros" title="Personalizar textos, cores e tema neste navegador">Parâmetros</button>
+    <span class="status-save" id="status-save">Salvo neste navegador</span>
+  </div>
+
+  <div class="toolbar" id="toolbar-compartilhado" hidden>
+    <button type="button" class="btn-primario" id="btn-comp-novo">+ Novo card</button>
+    <button type="button" class="btn-secundario" id="btn-comp-relatorio" title="Relatório do quadro compartilhado">Relatório 5 linhas</button>
+    <button type="button" class="btn-secundario" id="btn-comp-arquivados">Arquivados</button>
+    <button type="button" class="btn-secundario perigo" id="btn-comp-limpar-dados" hidden title="Só o host: arquiva todos os cards da sala (como Descartar); parâmetros da sala ficam">Limpar dados</button>
+    <button type="button" class="btn-secundario" id="btn-comp-tv" title="Tela grande só leitura">Modo TV</button>
+    <button type="button" class="btn-secundario" id="btn-comp-parametros" hidden title="Só o host: personaliza a sala compartilhada (não mexe no Individual)">Parâmetros da sala</button>
+    <button type="button" class="btn-secundario" id="btn-comp-exportar" hidden>Exportar (host)</button>
+    <button type="button" class="btn-secundario" id="btn-comp-importar" hidden>Importar (host)</button>
+    <button type="button" class="btn-secundario" id="btn-comp-sair">Sair do compartilhado</button>
+    <span class="status-save" id="status-comp">Aguardando entrada</span>
+  </div>
+
+  <div id="painel-compartilhado-login" class="toolbar" hidden>
+    <p class="aviso-param" id="comp-login-aviso" style="width:100%;margin:0 0 6px">Sala na rede do <strong>host</strong>. Convidado: URL do host + nome + chave — <strong>não precisa de Python</strong>. <strong>Host</strong> = só o PC que ativou a sala (reset, backup, parâmetros). Outro computador, mesmo com a chave, entra só como convidado.</p>
+    <p class="aviso-param" id="comp-papel-aviso" style="width:100%;margin:0 0 6px"></p>
+    <label>Seu nome (pode trocar depois; ID interno permanece)
+      <input id="comp-nome" maxlength="40" placeholder="Ex.: Ana Demo" autocomplete="off" required>
+    </label>
+    <label>Chave da sala
+      <input id="comp-chave" maxlength="80" placeholder="Cole a chave recebida do host" autocomplete="off">
+    </label>
+    <button type="button" class="btn-primario" id="btn-comp-entrar">Entrar no compartilhado</button>
+  </div>
+
+  <main id="board" class="board" aria-label="Quadro Kanban individual"></main>
+
+  <section id="area-compartilhada" aria-label="Quadro Kanban compartilhado">
+    <div id="board-comp" class="board"></div>
+    <aside class="painel-online">
+      <h2>Online agora</h2>
+      <ul id="lista-online"></ul>
+      <p class="aviso-param" id="comp-dica">Preencha o nome acima para entrar. Host é ID 0.</p>
+    </aside>
+  </section>
+
+  <button type="button" class="btn-primario" id="btn-sair-tv">Sair do modo TV</button>
+
+  <footer id="texto-rodape">Projeto demo público para estudo - Dados fictícios - Sem informações sensíveis - Feito para portfólio GitHub</footer>
+
+  <div class="modal" id="modal" hidden>
+    <div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+      <h2 id="titulo-modal">Novo card fictício</h2>
+      <p class="nota" id="nota-modal">O card entra em Backlog / Fila. Use apenas nomes inventados.</p>
+      <form id="form-novo">
+        <label><span id="rotulo-titulo">Título</span>
+          <input id="campo-titulo" name="titulo" required maxlength="160" autocomplete="off" placeholder="Ex.: Troca de teclado - Expedição - Pedido #1030">
+        </label>
+        <label><span id="rotulo-solicitante">Solicitante fictício</span>
+          <input id="campo-solicitante" name="solicitante" required maxlength="80" autocomplete="off" placeholder="Ex.: Marina Demo">
+        </label>
+        <p class="aviso-param" id="aviso-solicitante-comp" hidden style="margin:0 0 8px">No compartilhado o solicitante é o nome com que você entrou na sala (não altera).</p>
+        <label>Prioridade
+          <select name="prioridade">
+            <option value="normal">Normal</option>
+            <option value="alta">Alta</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </label>
+        <div class="acoes">
+          <button type="button" class="btn-secundario" id="btn-cancelar">Cancelar</button>
+          <button type="submit" class="btn-primario" id="btn-adicionar">Adicionar na fila</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-parametros" hidden>
+    <div class="dialogo parametros" role="dialog" aria-modal="true" aria-labelledby="titulo-parametros">
+      <h2 id="titulo-parametros">Parâmetros do Individual</h2>
+      <p class="aviso-param">Só neste navegador e só no quadro <strong>Individual</strong>. Não altera a sala Compartilhada. A sala tem parâmetros próprios (só o host edita).</p>
+      <form id="form-parametros">
+        <fieldset>
+          <legend>Página principal</legend>
+          <label>Título do quadro
+            <input name="tituloPagina" maxlength="120">
+          </label>
+          <label>Subtítulo
+            <input name="subtitulo" maxlength="180">
+          </label>
+          <label>Faixa de regras
+            <input name="regras" maxlength="220">
+          </label>
+          <label>Rodapé
+            <input name="rodape" maxlength="200">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Novo card</legend>
+          <label>Título da janela
+            <input name="tituloModal" maxlength="80">
+          </label>
+          <label>Descrição da janela
+            <input name="notaModal" maxlength="160">
+          </label>
+          <label>Nome do campo de título
+            <input name="rotuloTitulo" maxlength="40">
+          </label>
+          <label>Exemplo do campo de título
+            <input name="placeholderTitulo" maxlength="120">
+          </label>
+          <label>Nome do campo de solicitante
+            <input name="rotuloSolicitante" maxlength="40">
+          </label>
+          <label>Exemplo do campo de solicitante
+            <input name="placeholderSolicitante" maxlength="80">
+          </label>
+          <label>Texto do botão + Novo card
+            <input name="botaoNovo" maxlength="40">
+          </label>
+          <label>Texto do botão Adicionar
+            <input name="botaoAdicionar" maxlength="40">
+          </label>
+          <label>Prefixo no card (ex.: Solicitante:)
+            <input name="prefixoSolicitante" maxlength="40">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cores, fonte e tema</legend>
+          <label>Fonte
+            <select name="fonte">
+              <option value='"Segoe UI", system-ui, sans-serif'>Segoe UI</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value='"Courier New", Courier, monospace'>Courier</option>
+              <option value="system-ui, sans-serif">Sistema</option>
+            </select>
+          </label>
+          <label class="linha-cor">Cabeçalho
+            <input type="color" name="corCabecalho" value="#1F497D">
+          </label>
+          <label class="linha-cor">Texto do cabeçalho
+            <input type="color" name="corTextoCabecalho" value="#ffffff">
+          </label>
+          <label class="linha-cor">Fundo da página
+            <input type="color" name="corFundo" value="#e8edf2">
+          </label>
+          <label class="linha-cor">Texto
+            <input type="color" name="corTexto" value="#1c2833">
+          </label>
+          <label class="linha-cor">Texto secundário
+            <input type="color" name="corTextoSuave" value="#3d4c5c">
+          </label>
+          <label class="linha-cor">Alerta / WIP
+            <input type="color" name="corAlerta" value="#c0392b">
+          </label>
+          <label class="linha-cor">Card
+            <input type="color" name="corCard" value="#ffffff">
+          </label>
+          <label class="linha-cor">Coluna Backlog
+            <input type="color" name="corBacklog" value="#FFE5E5">
+          </label>
+          <label class="linha-cor">Coluna Priorizado
+            <input type="color" name="corPriorizado" value="#FFF2CC">
+          </label>
+          <label class="linha-cor">Coluna Em execução
+            <input type="color" name="corExecucao" value="#D5E8D4">
+          </label>
+          <label class="linha-cor">Coluna Aguardando
+            <input type="color" name="corAguardando" value="#DAE8FC">
+          </label>
+          <label class="linha-cor">Coluna Concluído
+            <input type="color" name="corConcluido" value="#E1D5E7">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Alarme e timer</legend>
+          <label>Segundos de bip e piscar no fim (1 a 60)
+            <input type="number" name="segundosAlarme" min="1" max="60" step="1" value="10">
+          </label>
+          <p class="aviso-param">O som e o piscar só funcionam com esta aba aberta. Se o Windows estiver mudo, o piscar continua chamando atenção.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>SLA (só Individual)</legend>
+          <label>Horas de SLA em Aguardando (alerta vermelho se passar)
+            <input type="number" name="slaHoras" min="1" max="240" step="1" value="24">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ligar sala neste PC (host)</legend>
+          <label>Porta do serviço compartilhado
+            <input type="number" name="portaCompartilhado" min="1024" max="65535" step="1" value="8777">
+          </label>
+          <label>Chave da sala (gerada neste PC e passada aos convidados)
+            <input name="chaveHost" id="campo-chave-host" maxlength="80" autocomplete="off" placeholder="Clique em Gerar chave e ativar" readonly>
+          </label>
+          <div class="acoes" style="margin-top:0.5rem">
+            <button type="button" class="btn-primario" id="btn-reativar-comp" title="Liga de novo com a mesma chave; o quadro neste PC continua">Reativar (mesma chave)</button>
+            <button type="button" class="btn-secundario" id="btn-gerar-chave-ativar" title="Nova chave de segurança; o quadro neste PC continua, convidados precisam da chave nova">Gerar nova chave e ativar</button>
+            <button type="button" class="btn-secundario" id="btn-copiar-chave">Copiar chave</button>
+            <button type="button" class="btn-secundario" id="btn-desligar-comp-local" title="Só desliga o serviço na rede; não apaga o quadro">Desligar neste PC</button>
+          </div>
+          <p class="aviso-param">Aqui só liga/desliga o serviço. Título, cores e ping da sala: aba Compartilhado → <strong>Parâmetros da sala</strong> (só host). Limpeza do Individual e da sala são independentes.</p>
+        </fieldset>
+
+        <p class="aviso-param"><strong>Limpar dados</strong> (toolbar) = arquiva os cards do quadro (como Descartar). <strong>Voltar ao padrão</strong> = <em>zera o Individual</em> (cards + arquivados) e devolve os exemplos e o visual padrão. Não mexe no Compartilhado. Se precisar guardar, use antes <strong>Salvar cópia do quadro</strong>.</p>
+        <div class="acoes">
+          <button type="button" class="btn-secundario perigo" id="btn-param-padrao">Voltar ao padrão</button>
+          <button type="button" class="btn-secundario" id="btn-param-cancelar">Cancelar</button>
+          <button type="submit" class="btn-primario">Salvar Individual</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-parametros-comp" hidden>
+    <div class="dialogo parametros" role="dialog" aria-modal="true" aria-labelledby="titulo-parametros-comp">
+      <h2 id="titulo-parametros-comp">Parâmetros da sala compartilhada</h2>
+      <p class="aviso-param">Só o <strong>host</strong> edita. Convidados recebem ao entrar ou ao atualizar (sem ver este botão). Não altera o quadro Individual de ninguém.</p>
+      <form id="form-parametros-comp">
+        <fieldset>
+          <legend>Identidade da sala</legend>
+          <label>Título (ex.: FARMÁCIA)
+            <input name="tituloPagina" maxlength="120">
+          </label>
+          <label>Subtítulo
+            <input name="subtitulo" maxlength="180">
+          </label>
+          <label>Faixa de regras
+            <input name="regras" maxlength="220">
+          </label>
+          <label>Rodapé
+            <input name="rodape" maxlength="200">
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Novo card (sala)</legend>
+          <label>Título da janela
+            <input name="tituloModal" maxlength="80">
+          </label>
+          <label>Descrição da janela
+            <input name="notaModal" maxlength="160">
+          </label>
+          <label>Nome do campo de título
+            <input name="rotuloTitulo" maxlength="40">
+          </label>
+          <label>Exemplo do campo de título
+            <input name="placeholderTitulo" maxlength="120">
+          </label>
+          <label>Nome do campo de solicitante
+            <input name="rotuloSolicitante" maxlength="40">
+          </label>
+          <label>Exemplo do campo de solicitante
+            <input name="placeholderSolicitante" maxlength="80">
+          </label>
+          <label>Texto do botão + Novo card
+            <input name="botaoNovo" maxlength="40">
+          </label>
+          <label>Texto do botão Adicionar
+            <input name="botaoAdicionar" maxlength="40">
+          </label>
+          <label>Prefixo no card (ex.: Solicitante:)
+            <input name="prefixoSolicitante" maxlength="40">
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Cores e fonte da sala</legend>
+          <label>Fonte
+            <select name="fonte">
+              <option value='"Segoe UI", system-ui, sans-serif'>Segoe UI</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value='"Courier New", Courier, monospace'>Courier</option>
+              <option value="system-ui, sans-serif">Sistema</option>
+            </select>
+          </label>
+          <label class="linha-cor">Cabeçalho
+            <input type="color" name="corCabecalho" value="#1F497D">
+          </label>
+          <label class="linha-cor">Texto do cabeçalho
+            <input type="color" name="corTextoCabecalho" value="#ffffff">
+          </label>
+          <label class="linha-cor">Fundo da página
+            <input type="color" name="corFundo" value="#e8edf2">
+          </label>
+          <label class="linha-cor">Texto
+            <input type="color" name="corTexto" value="#1c2833">
+          </label>
+          <label class="linha-cor">Texto secundário
+            <input type="color" name="corTextoSuave" value="#3d4c5c">
+          </label>
+          <label class="linha-cor">Alerta / WIP
+            <input type="color" name="corAlerta" value="#c0392b">
+          </label>
+          <label class="linha-cor">Card
+            <input type="color" name="corCard" value="#ffffff">
+          </label>
+          <label class="linha-cor">Coluna Backlog
+            <input type="color" name="corBacklog" value="#FFE5E5">
+          </label>
+          <label class="linha-cor">Coluna Priorizado
+            <input type="color" name="corPriorizado" value="#FFF2CC">
+          </label>
+          <label class="linha-cor">Coluna Em execução
+            <input type="color" name="corExecucao" value="#D5E8D4">
+          </label>
+          <label class="linha-cor">Coluna Aguardando
+            <input type="color" name="corAguardando" value="#DAE8FC">
+          </label>
+          <label class="linha-cor">Coluna Concluído
+            <input type="color" name="corConcluido" value="#E1D5E7">
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>SLA e ping da sala</legend>
+          <label>Horas de SLA em Aguardando (sala)
+            <input type="number" name="slaHoras" min="1" max="240" step="1" value="24">
+          </label>
+          <label>Ping mínimo (segundos)
+            <input type="number" name="syncPingMinSeg" min="0.8" max="30" step="0.1" value="1">
+          </label>
+          <label>Ping máximo (segundos)
+            <input type="number" name="syncPingMaxSeg" min="0.8" max="30" step="0.1" value="5">
+          </label>
+          <label>Ping usado (segundos)
+            <input type="number" name="syncPingSeg" min="0.8" max="30" step="0.1" value="2.5">
+          </label>
+          <p class="aviso-param">Sugestão: Wi‑Fi 2–3 s · cabo/gigabit 1–1,5 s. Convidados adotam no próximo ciclo.</p>
+        </fieldset>
+        <p class="aviso-param"><strong>Limpar dados</strong> (toolbar, só host) = arquiva os cards da sala (como Descartar). <strong>Voltar ao padrão</strong> = <em>zera a sala</em> (cards + arquivados), devolve exemplos e o visual padrão. Não mexe no Individual. Se precisar guardar, use <strong>Exportar</strong> antes. Pasta backup/ ilesa.</p>
+        <div class="acoes">
+          <button type="button" class="btn-secundario perigo" id="btn-param-comp-padrao">Voltar ao padrão</button>
+          <button type="button" class="btn-secundario" id="btn-param-comp-cancelar">Cancelar</button>
+          <button type="submit" class="btn-primario">Salvar sala</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-relogio" hidden>
+    <div class="dialogo parametros" role="dialog" aria-modal="true" aria-labelledby="titulo-relogio">
+      <h2 id="titulo-relogio">Alarme e timer</h2>
+      <p class="aviso-param">Funciona neste navegador, com a aba aberta. Padrão do timer: 10 minutos. Alarme: data de hoje e a hora que você escolher.</p>
+      <p class="relogio-status" id="relogio-status">Nada ligado agora.</p>
+
+      <fieldset>
+        <legend>Timer</legend>
+        <div class="relogio-grid">
+          <label>Minutos
+            <input type="number" id="timer-minutos" min="0" max="999" step="1" value="10">
+          </label>
+          <label>Segundos
+            <input type="number" id="timer-segundos" min="0" max="59" step="1" value="0">
+          </label>
+        </div>
+        <div class="acoes">
+          <button type="button" class="btn-primario" id="btn-timer-iniciar">Iniciar timer</button>
+          <button type="button" class="btn-secundario" id="btn-timer-parar">Parar timer</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Alarme</legend>
+        <div class="relogio-grid">
+          <label>Data
+            <input type="date" id="alarme-data">
+          </label>
+          <label>Hora
+            <input type="time" id="alarme-hora" step="60">
+          </label>
+        </div>
+        <div class="acoes">
+          <button type="button" class="btn-primario" id="btn-alarme-ligar">Ligar alarme</button>
+          <button type="button" class="btn-secundario" id="btn-alarme-desligar">Desligar alarme</button>
+        </div>
+      </fieldset>
+
+      <div class="acoes">
+        <button type="button" class="btn-secundario" id="btn-relogio-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="alerta-visual" class="alerta-visual" hidden></div>
+  <div id="alerta-barra" class="alerta-barra" hidden>
+    <span id="alerta-texto">Tempo esgotado</span>
+    <button type="button" class="btn-secundario" id="btn-alerta-parar">Parar</button>
+  </div>
+
+  <div class="modal" id="modal-relatorio" hidden>
+    <div class="dialogo parametros" role="dialog" aria-modal="true" aria-labelledby="titulo-relatorio">
+      <h2 id="titulo-relatorio">Relatório de 5 linhas</h2>
+      <p class="aviso-param">Texto pronto para colar na diretoria. Sem nome de pessoa.</p>
+      <pre class="relatorio-caixa" id="texto-relatorio"></pre>
+      <div class="acoes">
+        <button type="button" class="btn-secundario" id="btn-relatorio-copiar">Copiar</button>
+        <button type="button" class="btn-primario" id="btn-relatorio-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal" id="modal-arquivados" hidden>
+    <div class="dialogo arquivados" role="dialog" aria-modal="true" aria-labelledby="titulo-arquivados">
+      <h2 id="titulo-arquivados">Arquivados</h2>
+      <p class="aviso-param" id="aviso-arquivados">Cards fora do quadro e do relatório. Dá para criar cópia no Backlog (data nova).</p>
+      <ul class="lista-arquivados" id="lista-arquivados"></ul>
+      <div class="acoes">
+        <button type="button" class="btn-secundario perigo" id="btn-arquivados-limpar-comp" hidden>Limpar todos os arquivados (host)</button>
+        <button type="button" class="btn-primario" id="btn-arquivados-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-historico" hidden>
+    <div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="titulo-historico">
+      <h2 id="titulo-historico">Histórico do card</h2>
+      <p class="nota" id="historico-titulo-card"></p>
+      <ul id="lista-historico"></ul>
+      <div class="acoes">
+        <button type="button" class="btn-primario" id="btn-historico-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <input id="arquivo-json" type="file" accept="application/json,.json" hidden>
+  <input id="arquivo-comp-json" type="file" accept="application/json,.json" hidden>
+
+  <script>
+    const STORAGE_KEY = "kanban-ti-visivel-demo";
+    const PARAMS_KEY = "kanban-ti-visivel-demo-parametros";
+
+    const FONTES_OK = [
+      '"Segoe UI", system-ui, sans-serif',
+      "Arial, Helvetica, sans-serif",
+      "Tahoma, Geneva, sans-serif",
+      "Georgia, serif",
+      '"Courier New", Courier, monospace',
+      "system-ui, sans-serif"
+    ];
+
+    const PARAMS_PADRAO = {
+      tituloPagina: "KANBAN TI VISÍVEL - Demonstração - Portfólio Renato",
+      subtitulo: "Modelo 50 pessoas independentes acessando por computador ou instalado individual por computador",
+      regras: "Priorizado no máximo 3 · Em execução no máximo 2 · No limite, ou acima, o contador fica vermelho. O estouro continua visível.",
+      rodape: "Projeto demo público para estudo - Dados fictícios - Sem informações sensíveis - Feito para portfólio GitHub",
+      tituloModal: "Novo card fictício",
+      notaModal: "O card entra em Backlog / Fila. Use apenas nomes inventados.",
+      rotuloTitulo: "Título",
+      placeholderTitulo: "Ex.: Troca de teclado - Expedição - Pedido #1030",
+      rotuloSolicitante: "Solicitante fictício",
+      placeholderSolicitante: "Ex.: Marina Demo",
+      botaoNovo: "+ Novo card",
+      botaoAdicionar: "Adicionar na fila",
+      prefixoSolicitante: "Solicitante:",
+      fonte: '"Segoe UI", system-ui, sans-serif',
+      corCabecalho: "#1F497D",
+      corTextoCabecalho: "#FFFFFF",
+      corFundo: "#E8EDF2",
+      corTexto: "#1C2833",
+      corTextoSuave: "#3D4C5C",
+      corAlerta: "#C0392B",
+      corCard: "#FFFFFF",
+      corBacklog: "#FFE5E5",
+      corPriorizado: "#FFF2CC",
+      corExecucao: "#D5E8D4",
+      corAguardando: "#DAE8FC",
+      corConcluido: "#E1D5E7",
+      segundosAlarme: 10,
+      slaHoras: 24,
+      portaCompartilhado: 8777,
+      chaveHost: ""
+    };
+
+    const PARAMS_SALA_PADRAO = {
+      tituloPagina: "KANBAN COMPARTILHADO",
+      subtitulo: "Sala da equipe — personalizada pelo host",
+      regras: "Arraste o card. WIP: Priorizado 3 · Em execução 2.",
+      rodape: "Quadro compartilhado neste PC host.",
+      tituloModal: "Novo card (compartilhado)",
+      notaModal: "Entra no quadro da sala para todos.",
+      rotuloTitulo: "Título",
+      placeholderTitulo: "Ex.: Impressora Farmácia",
+      rotuloSolicitante: "Solicitante",
+      placeholderSolicitante: "Ex.: Ana",
+      botaoNovo: "+ Novo card",
+      botaoAdicionar: "Adicionar",
+      prefixoSolicitante: "Solicitante:",
+      fonte: '"Segoe UI", system-ui, sans-serif',
+      corCabecalho: "#1F497D",
+      corTextoCabecalho: "#FFFFFF",
+      corFundo: "#E8EDF2",
+      corTexto: "#1C2833",
+      corTextoSuave: "#3D4C5C",
+      corAlerta: "#C0392B",
+      corCard: "#FFFFFF",
+      corBacklog: "#FFE5E5",
+      corPriorizado: "#FFF2CC",
+      corExecucao: "#D5E8D4",
+      corAguardando: "#DAE8FC",
+      corConcluido: "#E1D5E7",
+      slaHoras: 24,
+      syncPingMinMs: 1000,
+      syncPingMaxMs: 5000,
+      syncPingMs: 2500
+    };
+
+    const COLUMNS = [
+      { id: "backlog", nome: "BACKLOG / FILA", dica: "Pedidos que ainda não foram puxados", limite: null, cor: "#FFE5E5" },
+      { id: "priorizado", nome: "PRIORIZADO", dica: "WIP máximo 3", limite: 3, cor: "#FFF2CC" },
+      { id: "execucao", nome: "EM EXECUÇÃO", dica: "WIP máximo 2", limite: 2, cor: "#D5E8D4" },
+      { id: "aguardando", nome: "AGUARDANDO", dica: "Fornecedor ou outro setor", limite: null, cor: "#DAE8FC" },
+      { id: "concluido", nome: "CONCLUÍDO", dica: "Entregue", limite: null, cor: "#E1D5E7" }
+    ];
+
+    const EXEMPLOS = [
+      {
+        id: "demo-1021",
+        column: "backlog",
+        prioridade: "normal",
+        solicitante: "Ana Silva",
+        titulo: "Impressora Qualidade - Setor B - Pedido #1021 - Ana Silva"
+      },
+      {
+        id: "demo-1022",
+        column: "backlog",
+        prioridade: "normal",
+        solicitante: "Carlos Souza",
+        titulo: "Relatório lote validade - Excel - Comercial - Pedido #1022 - Carlos Souza"
+      },
+      {
+        id: "demo-ad",
+        column: "priorizado",
+        prioridade: "alta",
+        solicitante: "Segurança",
+        titulo: "[ALTA] Limpar AD usuários fantasmas - Segurança"
+      },
+      {
+        id: "demo-mfa",
+        column: "priorizado",
+        prioridade: "alta",
+        solicitante: "Diretoria",
+        titulo: "[ALTA] MFA email diretoria"
+      },
+      {
+        id: "demo-joao",
+        column: "priorizado",
+        prioridade: "normal",
+        solicitante: "João Demo",
+        titulo: "Acesso ERP Comercial - Novo colaborador João Demo"
+      },
+      {
+        id: "demo-5521",
+        column: "aguardando",
+        prioridade: "normal",
+        solicitante: "Fornecedor ERP",
+        titulo: "Aguard. Fornecedor ERP retorno chamado #5521"
+      },
+      {
+        id: "demo-ok",
+        column: "concluido",
+        prioridade: "normal",
+        solicitante: "Produção",
+        titulo: "OK - Senha ERP Produção resetada - 10/10"
+      }
+    ];
+
+    const board = document.getElementById("board");
+    const modal = document.getElementById("modal");
+    const modalParametros = document.getElementById("modal-parametros");
+    const modalParametrosComp = document.getElementById("modal-parametros-comp");
+    const formNovo = document.getElementById("form-novo");
+    const formParametros = document.getElementById("form-parametros");
+    const formParametrosComp = document.getElementById("form-parametros-comp");
+    const toastEl = document.getElementById("toast");
+    const arquivoJson = document.getElementById("arquivo-json");
+    let state = carregar();
+    if (!Array.isArray(state.arquivados)) state.arquivados = [];
+    let params = carregarParametros();
+    let paramsSala = Object.assign({}, PARAMS_SALA_PADRAO);
+    let arrastandoId = null;
+    let toastTimer = 0;
+
+    function emModoCompartilhado() {
+      return document.body.classList.contains("modo-compartilhado");
+    }
+
+    function paramsAtivos() {
+      return emModoCompartilhado() ? paramsSala : params;
+    }
+
+    function novoId() {
+      return "card-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function textoLivre(valor, limite) {
+      if (typeof valor !== "string") return "";
+      return valor.slice(0, limite);
+    }
+
+    function corHex(valor, padrao) {
+      if (typeof valor === "string" && /^#[0-9A-Fa-f]{6}$/.test(valor.trim())) {
+        return valor.trim().toUpperCase();
+      }
+      return padrao;
+    }
+
+    function fonteOk(valor) {
+      return FONTES_OK.indexOf(valor) >= 0 ? valor : PARAMS_PADRAO.fonte;
+    }
+
+    function montarParametros(dados) {
+      const origem = dados && typeof dados === "object" ? dados : {};
+      return {
+        tituloPagina: textoLivre(origem.tituloPagina, 120),
+        subtitulo: textoLivre(origem.subtitulo, 180),
+        regras: textoLivre(origem.regras, 220),
+        rodape: textoLivre(origem.rodape, 200),
+        tituloModal: textoLivre(origem.tituloModal, 80),
+        notaModal: textoLivre(origem.notaModal, 160),
+        rotuloTitulo: textoLivre(origem.rotuloTitulo, 40),
+        placeholderTitulo: textoLivre(origem.placeholderTitulo, 120),
+        rotuloSolicitante: textoLivre(origem.rotuloSolicitante, 40),
+        placeholderSolicitante: textoLivre(origem.placeholderSolicitante, 80),
+        botaoNovo: textoLivre(origem.botaoNovo, 40),
+        botaoAdicionar: textoLivre(origem.botaoAdicionar, 40),
+        prefixoSolicitante: textoLivre(origem.prefixoSolicitante, 40),
+        fonte: fonteOk(origem.fonte),
+        corCabecalho: corHex(origem.corCabecalho, PARAMS_PADRAO.corCabecalho),
+        corTextoCabecalho: corHex(origem.corTextoCabecalho, PARAMS_PADRAO.corTextoCabecalho),
+        corFundo: corHex(origem.corFundo, PARAMS_PADRAO.corFundo),
+        corTexto: corHex(origem.corTexto, PARAMS_PADRAO.corTexto),
+        corTextoSuave: corHex(origem.corTextoSuave, PARAMS_PADRAO.corTextoSuave),
+        corAlerta: corHex(origem.corAlerta, PARAMS_PADRAO.corAlerta),
+        corCard: corHex(origem.corCard, PARAMS_PADRAO.corCard),
+        corBacklog: corHex(origem.corBacklog, PARAMS_PADRAO.corBacklog),
+        corPriorizado: corHex(origem.corPriorizado, PARAMS_PADRAO.corPriorizado),
+        corExecucao: corHex(origem.corExecucao, PARAMS_PADRAO.corExecucao),
+        corAguardando: corHex(origem.corAguardando, PARAMS_PADRAO.corAguardando),
+        corConcluido: corHex(origem.corConcluido, PARAMS_PADRAO.corConcluido),
+        segundosAlarme: segundosAlarmeOk(origem.segundosAlarme),
+        slaHoras: numeroFaixa(origem.slaHoras, 1, 240, PARAMS_PADRAO.slaHoras),
+        portaCompartilhado: numeroFaixa(origem.portaCompartilhado, 1024, 65535, PARAMS_PADRAO.portaCompartilhado),
+        chaveHost: textoLivre(origem.chaveHost, 80)
+      };
+    }
+
+    function montarParametrosSala(dados) {
+      const origem = dados && typeof dados === "object" ? dados : {};
+      const sync = normalizarSyncPing(origem);
+      return {
+        tituloPagina: textoLivre(origem.tituloPagina, 120) || PARAMS_SALA_PADRAO.tituloPagina,
+        subtitulo: textoLivre(origem.subtitulo, 180) || PARAMS_SALA_PADRAO.subtitulo,
+        regras: textoLivre(origem.regras, 220) || PARAMS_SALA_PADRAO.regras,
+        rodape: textoLivre(origem.rodape, 200) || PARAMS_SALA_PADRAO.rodape,
+        tituloModal: textoLivre(origem.tituloModal, 80) || PARAMS_SALA_PADRAO.tituloModal,
+        notaModal: textoLivre(origem.notaModal, 160) || PARAMS_SALA_PADRAO.notaModal,
+        rotuloTitulo: textoLivre(origem.rotuloTitulo, 40) || PARAMS_SALA_PADRAO.rotuloTitulo,
+        placeholderTitulo: textoLivre(origem.placeholderTitulo, 120) || PARAMS_SALA_PADRAO.placeholderTitulo,
+        rotuloSolicitante: textoLivre(origem.rotuloSolicitante, 40) || PARAMS_SALA_PADRAO.rotuloSolicitante,
+        placeholderSolicitante: textoLivre(origem.placeholderSolicitante, 80) || PARAMS_SALA_PADRAO.placeholderSolicitante,
+        botaoNovo: textoLivre(origem.botaoNovo, 40) || PARAMS_SALA_PADRAO.botaoNovo,
+        botaoAdicionar: textoLivre(origem.botaoAdicionar, 40) || PARAMS_SALA_PADRAO.botaoAdicionar,
+        prefixoSolicitante: textoLivre(origem.prefixoSolicitante, 40) || PARAMS_SALA_PADRAO.prefixoSolicitante,
+        fonte: fonteOk(origem.fonte) || PARAMS_SALA_PADRAO.fonte,
+        corCabecalho: corHex(origem.corCabecalho, PARAMS_SALA_PADRAO.corCabecalho),
+        corTextoCabecalho: corHex(origem.corTextoCabecalho, PARAMS_SALA_PADRAO.corTextoCabecalho),
+        corFundo: corHex(origem.corFundo, PARAMS_SALA_PADRAO.corFundo),
+        corTexto: corHex(origem.corTexto, PARAMS_SALA_PADRAO.corTexto),
+        corTextoSuave: corHex(origem.corTextoSuave, PARAMS_SALA_PADRAO.corTextoSuave),
+        corAlerta: corHex(origem.corAlerta, PARAMS_SALA_PADRAO.corAlerta),
+        corCard: corHex(origem.corCard, PARAMS_SALA_PADRAO.corCard),
+        corBacklog: corHex(origem.corBacklog, PARAMS_SALA_PADRAO.corBacklog),
+        corPriorizado: corHex(origem.corPriorizado, PARAMS_SALA_PADRAO.corPriorizado),
+        corExecucao: corHex(origem.corExecucao, PARAMS_SALA_PADRAO.corExecucao),
+        corAguardando: corHex(origem.corAguardando, PARAMS_SALA_PADRAO.corAguardando),
+        corConcluido: corHex(origem.corConcluido, PARAMS_SALA_PADRAO.corConcluido),
+        slaHoras: numeroFaixa(origem.slaHoras, 1, 240, PARAMS_SALA_PADRAO.slaHoras),
+        syncPingMinMs: sync.syncPingMinMs,
+        syncPingMaxMs: sync.syncPingMaxMs,
+        syncPingMs: sync.syncPingMs
+      };
+    }
+
+    function normalizarSyncPing(origem) {
+      const o = origem && typeof origem === "object" ? origem : {};
+      const deSeg = function (v, padraoMs) {
+        if (v === undefined || v === null || v === "") return padraoMs;
+        const n = Number(v);
+        if (!Number.isFinite(n)) return padraoMs;
+        return n >= 100 ? Math.round(n) : Math.round(n * 1000);
+      };
+      let minMs = deSeg(
+        o.syncPingMinMs != null ? o.syncPingMinMs : o.syncPingMinSeg,
+        PARAMS_SALA_PADRAO.syncPingMinMs
+      );
+      let maxMs = deSeg(
+        o.syncPingMaxMs != null ? o.syncPingMaxMs : o.syncPingMaxSeg,
+        PARAMS_SALA_PADRAO.syncPingMaxMs
+      );
+      let ms = deSeg(
+        o.syncPingMs != null ? o.syncPingMs : o.syncPingSeg,
+        PARAMS_SALA_PADRAO.syncPingMs
+      );
+      minMs = Math.min(30000, Math.max(800, minMs));
+      maxMs = Math.min(30000, Math.max(minMs, maxMs));
+      ms = Math.min(maxMs, Math.max(minMs, ms));
+      return { syncPingMinMs: minMs, syncPingMaxMs: maxMs, syncPingMs: ms };
+    }
+
+    function numeroFaixa(valor, min, max, padrao) {
+      const n = Number(valor);
+      if (!Number.isFinite(n)) return padrao;
+      return Math.min(max, Math.max(min, Math.round(n)));
+    }
+
+    function segundosAlarmeOk(valor) {
+      const n = Number(valor);
+      if (!Number.isFinite(n)) return PARAMS_PADRAO.segundosAlarme;
+      return Math.min(60, Math.max(1, Math.round(n)));
+    }
+
+    function carregarParametros() {
+      try {
+        const bruto = localStorage.getItem(PARAMS_KEY);
+        if (!bruto) return Object.assign({}, PARAMS_PADRAO);
+        return montarParametros(JSON.parse(bruto));
+      } catch (erro) {
+        return Object.assign({}, PARAMS_PADRAO);
+      }
+    }
+
+    function salvarParametros() {
+      try {
+        localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+      } catch (erro) {
+        mostrarToast("Não foi possível salvar os parâmetros neste navegador.");
+      }
+    }
+
+    function corColuna(id) {
+      const p = paramsAtivos();
+      if (id === "backlog") return p.corBacklog;
+      if (id === "priorizado") return p.corPriorizado;
+      if (id === "execucao") return p.corExecucao;
+      if (id === "aguardando") return p.corAguardando;
+      if (id === "concluido") return p.corConcluido;
+      return "#FFFFFF";
+    }
+
+    function aplicarParametros() {
+      const p = paramsAtivos();
+      const raiz = document.documentElement;
+      raiz.style.setProperty("--azul", p.corCabecalho);
+      raiz.style.setProperty("--texto-cabecalho", p.corTextoCabecalho);
+      raiz.style.setProperty("--fundo", p.corFundo);
+      raiz.style.setProperty("--texto", p.corTexto);
+      raiz.style.setProperty("--muted", p.corTextoSuave);
+      raiz.style.setProperty("--vermelho", p.corAlerta);
+      raiz.style.setProperty("--card", p.corCard);
+      raiz.style.setProperty("--fonte", p.fonte);
+      const metaTema = document.querySelector('meta[name="theme-color"]');
+      if (metaTema) metaTema.setAttribute("content", p.corCabecalho);
+
+      document.getElementById("texto-titulo").textContent = p.tituloPagina;
+      document.getElementById("texto-titulo").hidden = !p.tituloPagina;
+      document.getElementById("texto-subtitulo").textContent = p.subtitulo;
+      document.getElementById("texto-subtitulo").hidden = !p.subtitulo;
+      document.getElementById("texto-regras").textContent = p.regras;
+      document.getElementById("texto-regras").hidden = !p.regras;
+      document.getElementById("texto-rodape").textContent = p.rodape;
+      document.getElementById("texto-rodape").hidden = !p.rodape;
+      document.title = p.tituloPagina || "Kanban TI Visível";
+      document.getElementById("titulo-modal").textContent = p.tituloModal;
+      document.getElementById("nota-modal").textContent = p.notaModal;
+      document.getElementById("nota-modal").hidden = !p.notaModal;
+      document.getElementById("rotulo-titulo").textContent = p.rotuloTitulo;
+      document.getElementById("rotulo-solicitante").textContent = p.rotuloSolicitante;
+      document.getElementById("campo-titulo").placeholder = p.placeholderTitulo;
+      document.getElementById("campo-solicitante").placeholder = p.placeholderSolicitante;
+      document.getElementById("btn-novo").textContent = params.botaoNovo || "+";
+      document.getElementById("btn-adicionar").textContent = params.botaoAdicionar || "Salvar";
+      const btnCompNovo = document.getElementById("btn-comp-novo");
+      if (btnCompNovo) btnCompNovo.textContent = paramsSala.botaoNovo || "+ Novo card";
+    }
+
+    function preencherFormParametros() {
+      formParametros.tituloPagina.value = params.tituloPagina;
+      formParametros.subtitulo.value = params.subtitulo;
+      formParametros.regras.value = params.regras;
+      formParametros.rodape.value = params.rodape;
+      formParametros.tituloModal.value = params.tituloModal;
+      formParametros.notaModal.value = params.notaModal;
+      formParametros.rotuloTitulo.value = params.rotuloTitulo;
+      formParametros.placeholderTitulo.value = params.placeholderTitulo;
+      formParametros.rotuloSolicitante.value = params.rotuloSolicitante;
+      formParametros.placeholderSolicitante.value = params.placeholderSolicitante;
+      formParametros.botaoNovo.value = params.botaoNovo;
+      formParametros.botaoAdicionar.value = params.botaoAdicionar;
+      formParametros.prefixoSolicitante.value = params.prefixoSolicitante;
+      formParametros.fonte.value = params.fonte;
+      formParametros.corCabecalho.value = params.corCabecalho.toLowerCase();
+      formParametros.corTextoCabecalho.value = params.corTextoCabecalho.toLowerCase();
+      formParametros.corFundo.value = params.corFundo.toLowerCase();
+      formParametros.corTexto.value = params.corTexto.toLowerCase();
+      formParametros.corTextoSuave.value = params.corTextoSuave.toLowerCase();
+      formParametros.corAlerta.value = params.corAlerta.toLowerCase();
+      formParametros.corCard.value = params.corCard.toLowerCase();
+      formParametros.corBacklog.value = params.corBacklog.toLowerCase();
+      formParametros.corPriorizado.value = params.corPriorizado.toLowerCase();
+      formParametros.corExecucao.value = params.corExecucao.toLowerCase();
+      formParametros.corAguardando.value = params.corAguardando.toLowerCase();
+      formParametros.corConcluido.value = params.corConcluido.toLowerCase();
+      formParametros.segundosAlarme.value = String(params.segundosAlarme);
+      formParametros.slaHoras.value = String(params.slaHoras);
+      formParametros.portaCompartilhado.value = String(params.portaCompartilhado);
+      formParametros.chaveHost.value = params.chaveHost || "";
+    }
+
+    function preencherFormParametrosComp() {
+      const p = paramsSala;
+      formParametrosComp.tituloPagina.value = p.tituloPagina;
+      formParametrosComp.subtitulo.value = p.subtitulo;
+      formParametrosComp.regras.value = p.regras;
+      formParametrosComp.rodape.value = p.rodape;
+      formParametrosComp.tituloModal.value = p.tituloModal;
+      formParametrosComp.notaModal.value = p.notaModal;
+      formParametrosComp.rotuloTitulo.value = p.rotuloTitulo;
+      formParametrosComp.placeholderTitulo.value = p.placeholderTitulo;
+      formParametrosComp.rotuloSolicitante.value = p.rotuloSolicitante;
+      formParametrosComp.placeholderSolicitante.value = p.placeholderSolicitante;
+      formParametrosComp.botaoNovo.value = p.botaoNovo;
+      formParametrosComp.botaoAdicionar.value = p.botaoAdicionar;
+      formParametrosComp.prefixoSolicitante.value = p.prefixoSolicitante;
+      formParametrosComp.fonte.value = p.fonte;
+      formParametrosComp.corCabecalho.value = p.corCabecalho.toLowerCase();
+      formParametrosComp.corTextoCabecalho.value = p.corTextoCabecalho.toLowerCase();
+      formParametrosComp.corFundo.value = p.corFundo.toLowerCase();
+      formParametrosComp.corTexto.value = p.corTexto.toLowerCase();
+      formParametrosComp.corTextoSuave.value = p.corTextoSuave.toLowerCase();
+      formParametrosComp.corAlerta.value = p.corAlerta.toLowerCase();
+      formParametrosComp.corCard.value = p.corCard.toLowerCase();
+      formParametrosComp.corBacklog.value = p.corBacklog.toLowerCase();
+      formParametrosComp.corPriorizado.value = p.corPriorizado.toLowerCase();
+      formParametrosComp.corExecucao.value = p.corExecucao.toLowerCase();
+      formParametrosComp.corAguardando.value = p.corAguardando.toLowerCase();
+      formParametrosComp.corConcluido.value = p.corConcluido.toLowerCase();
+      formParametrosComp.slaHoras.value = String(p.slaHoras);
+      formParametrosComp.syncPingMinSeg.value = String((p.syncPingMinMs / 1000).toFixed(1).replace(/\.0$/, ""));
+      formParametrosComp.syncPingMaxSeg.value = String((p.syncPingMaxMs / 1000).toFixed(1).replace(/\.0$/, ""));
+      formParametrosComp.syncPingSeg.value = String((p.syncPingMs / 1000).toFixed(1).replace(/\.0$/, ""));
+    }
+
+    function abrirParametros() {
+      preencherFormParametros();
+      modalParametros.hidden = false;
+      formParametros.tituloPagina.focus();
+    }
+
+    function fecharParametros() {
+      modalParametros.hidden = true;
+    }
+
+    function abrirParametrosComp() {
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Parâmetros da sala só para o host.");
+        return;
+      }
+      preencherFormParametrosComp();
+      modalParametrosComp.hidden = false;
+      formParametrosComp.tituloPagina.focus();
+    }
+
+    function fecharParametrosComp() {
+      modalParametrosComp.hidden = true;
+    }
+
+    function receberSalaDoServidor(dados) {
+      if (!dados || typeof dados !== "object") return;
+      const bruto = dados.sala && typeof dados.sala === "object"
+        ? dados.sala
+        : (dados.tituloPagina != null ? dados : null);
+      if (bruto) {
+        paramsSala = montarParametrosSala(Object.assign({}, paramsSala, bruto));
+      } else if (dados.syncPingMs != null) {
+        paramsSala = montarParametrosSala(Object.assign({}, paramsSala, {
+          syncPingMinMs: dados.syncPingMinMs,
+          syncPingMaxMs: dados.syncPingMaxMs,
+          syncPingMs: dados.syncPingMs
+        }));
+      } else {
+        return;
+      }
+      reiniciarPollComp();
+      if (emModoCompartilhado()) {
+        aplicarParametros();
+        if (typeof renderCompartilhado === "function") renderCompartilhado();
+      }
+    }
+
+    function exemplos() {
+      return EXEMPLOS.map(function (card) {
+        return {
+          id: card.id,
+          column: card.column,
+          prioridade: card.prioridade,
+          solicitante: card.solicitante,
+          titulo: card.titulo
+        };
+      });
+    }
+
+    function sanitizarCards(lista) {
+      const ids = new Set();
+      const cards = [];
+      lista.forEach(function (item) {
+        if (!item || typeof item.titulo !== "string" || !item.titulo.trim()) return;
+        if (!COLUMNS.some(function (col) { return col.id === item.column; })) return;
+        let id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : novoId();
+        while (ids.has(id)) id = novoId();
+        ids.add(id);
+        const prioridade = item.prioridade === "alta" || item.prioridade === "baixa" ? item.prioridade : "normal";
+        const solicitante = typeof item.solicitante === "string" && item.solicitante.trim()
+          ? item.solicitante.trim()
+          : "Não informado";
+        const card = garantirMetaCard({
+          id: id,
+          column: item.column,
+          prioridade: prioridade,
+          solicitante: solicitante.slice(0, 80),
+          titulo: item.titulo.trim().slice(0, 180),
+          criadoEm: typeof item.criadoEm === "string" ? item.criadoEm : "",
+          criadoPor: typeof item.criadoPor === "string" ? item.criadoPor : "local",
+          aguardandoDesde: item.aguardandoDesde || null,
+          historico: Array.isArray(item.historico) ? item.historico : []
+        });
+        cards.push(card);
+      });
+      return cards;
+    }
+
+
+    function sanitizarArquivados(lista) {
+      const saida = [];
+      if (!Array.isArray(lista)) return saida;
+      lista.forEach(function (item) {
+        if (!item || typeof item.titulo !== "string" || !item.titulo.trim()) return;
+        saida.push({
+          id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : novoId(),
+          titulo: item.titulo.trim().slice(0, 180),
+          solicitante: (typeof item.solicitante === "string" && item.solicitante.trim() ? item.solicitante.trim() : "Não informado").slice(0, 80),
+          prioridade: item.prioridade === "alta" || item.prioridade === "baixa" ? item.prioridade : "normal",
+          criadoEm: typeof item.criadoEm === "string" ? item.criadoEm : "",
+          criadoPor: typeof item.criadoPor === "string" ? item.criadoPor : "local",
+          deColuna: typeof item.deColuna === "string" ? item.deColuna : "",
+          descartadoEm: typeof item.descartadoEm === "string" ? item.descartadoEm : agoraLocalIso(),
+          descartadoPor: typeof item.descartadoPor === "string" ? item.descartadoPor : ""
+        });
+      });
+      return saida;
+    }
+
+    function nomeColuna(id) {
+      const col = COLUMNS.find(function (c) { return c.id === id; });
+      return col ? col.nome : (id || "—");
+    }
+
+    function atualizarBotaoArquivados() {
+      const n = (state.arquivados || []).length;
+      const btn = document.getElementById("btn-arquivados");
+      if (btn) btn.textContent = n ? ("Arquivados (" + n + ")") : "Arquivados";
+      const btnComp = document.getElementById("btn-comp-arquivados");
+      if (!btnComp) return;
+      let nComp = 0;
+      try {
+        if (quadroComp && Array.isArray(quadroComp.arquivados)) nComp = quadroComp.arquivados.length;
+      } catch (e) {
+        nComp = 0;
+      }
+      btnComp.textContent = nComp ? ("Arquivados (" + nComp + ")") : "Arquivados";
+    }
+
+    function carregar() {
+      try {
+        const bruto = localStorage.getItem(STORAGE_KEY);
+        if (!bruto) return { versao: 1, cards: exemplos(), arquivados: [] };
+        const dados = JSON.parse(bruto);
+        if (!dados || !Array.isArray(dados.cards)) return { versao: 1, cards: exemplos(), arquivados: [] };
+        return {
+          versao: 1,
+          cards: sanitizarCards(dados.cards),
+          arquivados: sanitizarArquivados(dados.arquivados || [])
+        };
+      } catch (erro) {
+        return { versao: 1, cards: exemplos(), arquivados: [] };
+      }
+    }
+
+    function salvar() {
+      const status = document.getElementById("status-save");
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        status.textContent = "Salvo neste navegador";
+      } catch (erro) {
+        status.textContent = "Não foi possível salvar neste navegador";
+      }
+    }
+
+    function contagem(coluna) {
+      return state.cards.filter(function (card) { return card.column === coluna; }).length;
+    }
+
+    function elemento(tag, classe, texto) {
+      const no = document.createElement(tag);
+      if (classe) no.className = classe;
+      if (texto != null) no.textContent = texto;
+      return no;
+    }
+
+    function mostrarToast(mensagem) {
+      toastEl.textContent = mensagem;
+      toastEl.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3400);
+    }
+
+    function atualizarResumo() {
+      if (document.body.classList.contains("modo-compartilhado")) {
+        atualizarResumoCompartilhado();
+        return;
+      }
+      const partes = COLUMNS.map(function (col) {
+        const qtd = contagem(col.id);
+        return col.limite ? col.nome + " " + qtd + "/" + col.limite : col.nome + " " + qtd;
+      });
+      document.getElementById("resumo").textContent = "Individual · " + state.cards.length + " cards · " + partes.join(" · ");
+    }
+
+    function atualizarResumoCompartilhado() {
+      const cards = (quadroComp && quadroComp.cards) || [];
+      const partes = COLUMNS.map(function (col) {
+        const qtd = cards.filter(function (c) { return c.column === col.id; }).length;
+        return col.limite ? col.nome + " " + qtd + "/" + col.limite : col.nome + " " + qtd;
+      });
+      const extra = sessaoComp ? "" : " · entre com seu nome para interagir";
+      document.getElementById("resumo").textContent = "Compartilhado · " + cards.length + " cards · " + partes.join(" · ") + extra;
+    }
+
+    function agoraLocalIso() {
+      const d = new Date();
+      const pad = function (n) { return String(n).padStart(2, "0"); };
+      return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    }
+
+    function formatarQuando(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString("pt-BR");
+    }
+
+    function garantirMetaCard(card) {
+      if (!card.criadoEm) card.criadoEm = agoraLocalIso();
+      if (!card.criadoPor) card.criadoPor = "local";
+      if (!Array.isArray(card.historico)) card.historico = [];
+      if (card.column === "aguardando" && !card.aguardandoDesde) card.aguardandoDesde = card.criadoEm;
+      if (card.column !== "aguardando") card.aguardandoDesde = null;
+      return card;
+    }
+
+    function registrarHistorico(card, deColuna, paraColuna, detalhe) {
+      if (!Array.isArray(card.historico)) card.historico = [];
+      card.historico.unshift({
+        em: agoraLocalIso(),
+        quem: card.criadoPor || "local",
+        deColuna: deColuna || null,
+        paraColuna: paraColuna || null,
+        detalhe: detalhe || "moveu"
+      });
+      if (card.historico.length > 30) card.historico.length = 30;
+    }
+
+    function horasEmAguardando(card) {
+      if (card.column !== "aguardando" || !card.aguardandoDesde) return 0;
+      const ini = new Date(card.aguardandoDesde).getTime();
+      if (Number.isNaN(ini)) return 0;
+      return (Date.now() - ini) / 3600000;
+    }
+
+    function slaEstourado(card) {
+      return horasEmAguardando(card) >= Number(paramsAtivos().slaHoras || 24);
+    }
+
+
+    function descartarCardLocal(id) {
+      const card = state.cards.find(function (item) { return item.id === id; });
+      if (!card) return;
+      if (!window.confirm("Descartar este card? Ele sai do quadro e vai para Arquivados (fora do relatório).")) return;
+      state.cards = state.cards.filter(function (item) { return item.id !== id; });
+      if (!Array.isArray(state.arquivados)) state.arquivados = [];
+      state.arquivados.unshift({
+        id: card.id,
+        titulo: card.titulo,
+        solicitante: card.solicitante,
+        prioridade: card.prioridade,
+        criadoEm: card.criadoEm || "",
+        criadoPor: card.criadoPor || "local",
+        deColuna: card.column,
+        descartadoEm: agoraLocalIso(),
+        descartadoPor: ""
+      });
+      salvar();
+      render();
+      mostrarToast("Card descartado. Veja em Arquivados.");
+    }
+
+    function excluirArquivadoLocal(id) {
+      if (!window.confirm("Excluir este card permanentemente? Não dá para desfazer.")) return;
+      state.arquivados = (state.arquivados || []).filter(function (item) { return item.id !== id; });
+      salvar();
+      renderListaArquivados(false);
+      atualizarBotaoArquivados();
+      mostrarToast("Card excluído permanentemente.");
+    }
+
+    function copiarArquivadoLocal(id) {
+      const orig = (state.arquivados || []).find(function (item) { return item.id === id; });
+      if (!orig) return;
+      const novo = garantirMetaCard({
+        id: novoId(),
+        column: "backlog",
+        titulo: orig.titulo,
+        solicitante: orig.solicitante,
+        prioridade: orig.prioridade,
+        criadoEm: agoraLocalIso(),
+        criadoPor: "local",
+        aguardandoDesde: null,
+        historico: []
+      });
+      registrarHistorico(novo, null, "backlog", "cópia do arquivado");
+      state.cards.push(novo);
+      salvar();
+      render();
+      renderListaArquivados(false);
+      mostrarToast("Cópia criada no Backlog / Fila (data nova). O arquivado permanece.");
+    }
+
+    function renderListaArquivados(compartilhado) {
+      const ul = document.getElementById("lista-arquivados");
+      ul.replaceChildren();
+      const lista = compartilhado
+        ? ((quadroComp && quadroComp.arquivados) || [])
+        : (state.arquivados || []);
+      if (!lista.length) {
+        ul.append(elemento("li", null, "Nenhum card arquivado."));
+        return;
+      }
+      lista.forEach(function (item) {
+        const li = documentoLiArquivado(item, compartilhado);
+        ul.append(li);
+      });
+    }
+
+    function documentoLiArquivado(item, compartilhado) {
+      const li = elemento("li");
+      li.append(elemento("h3", null, item.titulo));
+      li.append(elemento("p", "meta-card", paramsAtivos().prefixoSolicitante + " " + item.solicitante));
+      li.append(elemento("p", "meta-card", "Descartado de: " + nomeColuna(item.deColuna)));
+      li.append(elemento("p", "meta-card", "Quando: " + formatarQuando(item.descartadoEm)));
+      if (item.descartadoPor) {
+        li.append(elemento("p", "meta-card", "Por: " + item.descartadoPor));
+      }
+      const acoes = elemento("div", "acoes");
+      const btnCopia = elemento("button", "btn-secundario", "Criar cópia no Backlog");
+      btnCopia.type = "button";
+      if (compartilhado) {
+        btnCopia.addEventListener("click", function () { copiarArquivadoComp(item.id); });
+        acoes.append(btnCopia);
+        if (sessaoComp && sessaoComp.papel === "host") {
+          const btnExc = elemento("button", "btn-secundario perigo", "Excluir permanentemente");
+          btnExc.type = "button";
+          btnExc.addEventListener("click", function () { excluirArquivadoComp(item.id); });
+          acoes.append(btnExc);
+        }
+      } else {
+        btnCopia.addEventListener("click", function () { copiarArquivadoLocal(item.id); });
+        const btnExc = elemento("button", "btn-secundario perigo", "Excluir permanentemente");
+        btnExc.type = "button";
+        btnExc.addEventListener("click", function () { excluirArquivadoLocal(item.id); });
+        acoes.append(btnCopia, btnExc);
+      }
+      li.append(acoes);
+      return li;
+    }
+
+    function abrirArquivados(compartilhado) {
+      const ehComp = !!compartilhado;
+      const aviso = document.getElementById("aviso-arquivados");
+      const btnLimpar = document.getElementById("btn-arquivados-limpar-comp");
+      if (ehComp) {
+        aviso.textContent = "Arquivados do quadro compartilhado (todos veem). Criar cópia no Backlog: qualquer um. Excluir de vez / limpar lista: só o host.";
+        btnLimpar.hidden = !(sessaoComp && sessaoComp.papel === "host");
+      } else {
+        aviso.textContent = "Arquivados deste navegador (Individual). Você limpa o que quiser. Dá para criar cópia no Backlog ou excluir de vez.";
+        btnLimpar.hidden = true;
+      }
+      renderListaArquivados(ehComp);
+      document.getElementById("modal-arquivados").dataset.modo = ehComp ? "comp" : "local";
+      document.getElementById("modal-arquivados").hidden = false;
+    }
+
+    function montarRelatorio(cards) {
+      const lista = cards || state.cards;
+      const priorizado = lista.filter(function (c) { return c.column === "priorizado"; }).length;
+      const execucao = lista.filter(function (c) { return c.column === "execucao"; }).length;
+      const aguardando = lista.filter(function (c) { return c.column === "aguardando"; }).length;
+      const sla = lista.filter(slaEstourado).length;
+      const concluido = lista.filter(function (c) { return c.column === "concluido"; }).length;
+      const linhas = [
+        "1. Priorizado agora: " + priorizado + "/3" + (priorizado > 3 ? " (estourou WIP)" : priorizado === 3 ? " (no limite)" : "") + ".",
+        "2. Em execução: " + execucao + "/2" + (execucao > 2 ? " (estourou WIP)" : "") + ".",
+        "3. Aguardando fornecedor/setor: " + aguardando + " card(s); " + sla + " acima do SLA de " + paramsAtivos().slaHoras + "h.",
+        "4. Concluídos no quadro: " + concluido + ".",
+        "5. Próximo foco: puxar da fila só se Priorizado < 3 e Em execução < 2; cobrar o que está em Aguardando."
+      ];
+      return linhas.join("\n");
+    }
+
+    function abrirRelatorio(cards) {
+      document.getElementById("texto-relatorio").textContent = montarRelatorio(cards);
+      document.getElementById("modal-relatorio").hidden = false;
+    }
+
+    function abrirHistorico(card) {
+      document.getElementById("historico-titulo-card").textContent = card.titulo;
+      const ul = document.getElementById("lista-historico");
+      ul.replaceChildren();
+      const hist = Array.isArray(card.historico) ? card.historico : [];
+      if (!hist.length) {
+        ul.append(elemento("li", null, "Sem movimentos registrados ainda."));
+      } else {
+        hist.forEach(function (h) {
+          const trecho = formatarQuando(h.em) + " · " + (h.quem || "?") + " · " + (h.detalhe || "moveu");
+          const cols = (h.deColuna || "—") + " → " + (h.paraColuna || "—");
+          ul.append(elemento("li", null, trecho + " · " + cols));
+        });
+      }
+      document.getElementById("modal-historico").hidden = false;
+    }
+
+    function ativarModoTv() {
+      document.body.classList.add("tv-mode");
+      if (document.body.classList.contains("modo-compartilhado")) renderCompartilhado();
+      else render();
+      mostrarToast("Modo TV: só leitura. Esc ou botão para sair.");
+    }
+
+    function sairModoTv() {
+      document.body.classList.remove("tv-mode");
+      if (document.body.classList.contains("modo-compartilhado")) renderCompartilhado();
+      else render();
+    }
+
+    function render() {
+      board.replaceChildren();
+      COLUMNS.forEach(function (col) {
+        const cards = state.cards.filter(function (card) { return card.column === col.id; });
+        const section = elemento("section", "column");
+        section.dataset.column = col.id;
+        section.style.background = corColuna(col.id);
+        section.setAttribute("aria-label", col.nome);
+
+        const head = elemento("div", "col-head");
+        const textos = elemento("div");
+        textos.append(elemento("h2", null, col.nome), elemento("p", null, col.dica));
+
+        const contador = elemento("span", "contador");
+        if (col.limite) {
+          contador.textContent = cards.length + "/" + col.limite;
+          contador.title = cards.length + " cards. Limite de " + col.limite + ".";
+          if (cards.length > col.limite) {
+            contador.classList.add("estouro");
+            section.classList.add("estouro");
+          } else if (cards.length === col.limite) {
+            contador.classList.add("limite");
+            section.classList.add("no-limite");
+          }
+        } else {
+          contador.textContent = String(cards.length);
+          contador.title = cards.length === 1 ? "1 card" : cards.length + " cards";
+        }
+        contador.setAttribute("aria-label", contador.title);
+
+        head.append(textos, contador);
+        const lista = elemento("div", "cards");
+
+        if (!cards.length) {
+          lista.append(elemento("p", "vazio", "Nenhum card nesta coluna"));
+        }
+
+        cards.forEach(function (card) {
+          garantirMetaCard(card);
+          const artigo = elemento("article", "card" + (card.prioridade === "normal" ? "" : " " + card.prioridade));
+          artigo.draggable = !document.body.classList.contains("tv-mode");
+          artigo.dataset.id = card.id;
+          artigo.dataset.column = card.column;
+          artigo.tabIndex = 0;
+          artigo.title = "Duplo clique: histórico. Arraste para mover.";
+          if (card.prioridade === "alta") artigo.append(elemento("span", "badge alta", "ALTA"));
+          if (card.prioridade === "baixa") artigo.append(elemento("span", "badge baixa", "BAIXA"));
+          if (slaEstourado(card)) artigo.append(elemento("span", "badge sla", "SLA"));
+          artigo.append(
+            elemento("h3", null, card.titulo),
+            elemento("p", "quem", paramsAtivos().prefixoSolicitante + " " + card.solicitante),
+            elemento("p", "meta-card", "Criado: " + formatarQuando(card.criadoEm) + " · " + (card.criadoPor || "local"))
+          );
+          if (card.column === "aguardando" && card.aguardandoDesde) {
+            artigo.append(elemento("p", "meta-card", "Em aguardo desde " + formatarQuando(card.aguardandoDesde) + " · SLA " + paramsAtivos().slaHoras + "h"));
+          }
+          const acoes = elemento("div", "card-acoes");
+          const btnDesc = elemento("button", "perigo", "Descartar");
+          btnDesc.type = "button";
+          btnDesc.title = "Tira o card do quadro e manda para Arquivados";
+          btnDesc.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+          btnDesc.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            descartarCardLocal(card.id);
+          });
+          acoes.append(btnDesc);
+          artigo.append(acoes);
+          lista.append(artigo);
+        });
+
+        section.append(head, lista);
+        board.append(section);
+      });
+      atualizarResumo();
+      atualizarBotaoArquivados();
+    }
+
+    function moverCard(id, coluna, beforeId) {
+      const card = state.cards.find(function (item) { return item.id === id; });
+      if (!card || !COLUMNS.some(function (col) { return col.id === coluna; })) return;
+      const de = card.column;
+      state.cards = state.cards.filter(function (item) { return item.id !== id; });
+      if (coluna === "aguardando" && de !== "aguardando") card.aguardandoDesde = agoraLocalIso();
+      if (coluna !== "aguardando") card.aguardandoDesde = null;
+      card.column = coluna;
+      registrarHistorico(card, de, coluna, "moveu");
+      if (beforeId) {
+        const indice = state.cards.findIndex(function (item) { return item.id === beforeId; });
+        if (indice >= 0) state.cards.splice(indice, 0, card);
+        else state.cards.push(card);
+      } else {
+        state.cards.push(card);
+      }
+      salvar();
+      render();
+      const col = COLUMNS.find(function (item) { return item.id === coluna; });
+      const qtd = contagem(coluna);
+      if (col && col.limite && qtd > col.limite) {
+        mostrarToast(col.nome + " estourou o WIP: " + qtd + "/" + col.limite + ". O limite existe para o excesso ficar visível.");
+      }
+    }
+
+    function focarCard(id) {
+      const card = board.querySelector('[data-id="' + CSS.escape(id) + '"]');
+      if (card) card.focus();
+    }
+
+    let modalNovoModo = "individual";
+
+    function abrirModal() {
+      modalNovoModo = "individual";
+      formNovo.reset();
+      const campoSol = document.getElementById("campo-solicitante");
+      campoSol.readOnly = false;
+      campoSol.classList.remove("campo-travado");
+      campoSol.removeAttribute("aria-disabled");
+      const avisoComp = document.getElementById("aviso-solicitante-comp");
+      if (avisoComp) avisoComp.hidden = true;
+      modal.hidden = false;
+      document.getElementById("campo-titulo").focus();
+    }
+
+    function abrirModalCompartilhado() {
+      if (!sessaoComp) {
+        mostrarToast("Entre no compartilhado para criar card.");
+        return;
+      }
+      modalNovoModo = "comp";
+      formNovo.reset();
+      const campoSol = document.getElementById("campo-solicitante");
+      campoSol.value = sessaoComp.nome || "";
+      campoSol.readOnly = true;
+      campoSol.classList.add("campo-travado");
+      campoSol.setAttribute("aria-disabled", "true");
+      const avisoComp = document.getElementById("aviso-solicitante-comp");
+      if (avisoComp) avisoComp.hidden = false;
+      const selPri = formNovo.querySelector('select[name="prioridade"]');
+      if (selPri) selPri.value = "normal";
+      modal.hidden = false;
+      document.getElementById("campo-titulo").focus();
+    }
+
+    function fecharModal() {
+      modal.hidden = true;
+      modalNovoModo = "individual";
+      const campoSol = document.getElementById("campo-solicitante");
+      campoSol.readOnly = false;
+      campoSol.classList.remove("campo-travado");
+      campoSol.removeAttribute("aria-disabled");
+      const avisoComp = document.getElementById("aviso-solicitante-comp");
+      if (avisoComp) avisoComp.hidden = true;
+    }
+
+    function exportar() {
+      const payload = {
+        projeto: "kanban-ti-visivel-demo",
+        empresa: "Demonstração",
+        aviso: "Dados fictícios de demonstração. Sem informações sensíveis.",
+        versao: 1,
+        exportadoEm: new Date().toISOString(),
+        cards: state.cards,
+        arquivados: state.arquivados || []
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "kanban-demonstracao.json";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      mostrarToast("Cópia do quadro salva neste computador. Envie o arquivo para a outra pessoa.");
+    }
+
+    function importarTexto(texto) {
+      const dados = JSON.parse(texto);
+      const lista = Array.isArray(dados) ? dados : dados && dados.cards;
+      if (!Array.isArray(lista)) throw new Error("Este arquivo não tem uma lista de cards.");
+      if (!lista.length) throw new Error("A lista de cards está vazia.");
+      const cards = [];
+      const ids = new Set();
+      lista.forEach(function (item, indice) {
+        const numero = indice + 1;
+        if (!item || typeof item !== "object") throw new Error("Card " + numero + " é inválido.");
+        if (typeof item.titulo !== "string" || !item.titulo.trim()) throw new Error("Card " + numero + " está sem título.");
+        if (!COLUMNS.some(function (col) { return col.id === item.column; })) {
+          throw new Error("Card " + numero + " está com coluna desconhecida.");
+        }
+        let id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : novoId();
+        if (ids.has(id)) id = novoId();
+        ids.add(id);
+        cards.push({
+          id: id,
+          column: item.column,
+          titulo: item.titulo.trim().slice(0, 180),
+          solicitante: (typeof item.solicitante === "string" && item.solicitante.trim() ? item.solicitante.trim() : "Não informado").slice(0, 80),
+          prioridade: item.prioridade === "alta" || item.prioridade === "baixa" ? item.prioridade : "normal"
+        });
+      });
+      const confirma = window.confirm("Trazer esta cópia substitui o quadro deste navegador por " + cards.length + " cards. Continuar?");
+      if (!confirma) return;
+      state.cards = cards;
+      if (dados && Array.isArray(dados.arquivados)) {
+        state.arquivados = sanitizarArquivados(dados.arquivados);
+      }
+      salvar();
+      render();
+      mostrarToast("Cópia aberta neste navegador.");
+    }
+
+    const modalRelogio = document.getElementById("modal-relogio");
+    const relogioStatus = document.getElementById("relogio-status");
+    const alertaVisual = document.getElementById("alerta-visual");
+    const alertaBarra = document.getElementById("alerta-barra");
+    const alertaTexto = document.getElementById("alerta-texto");
+
+    let audioCtx = null;
+    let timerId = null;
+    let timerFim = 0;
+    let timerTick = null;
+    let alarmeEm = 0;
+    let alarmeTick = null;
+    let alertaTick = null;
+    let alertaSom = null;
+    let alertaAte = 0;
+
+    function garantirAudio() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    function hojeISO() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dia = String(d.getDate()).padStart(2, "0");
+      return d.getFullYear() + "-" + m + "-" + dia;
+    }
+
+    function horaAgoraMais(minutos) {
+      const d = new Date(Date.now() + minutos * 60000);
+      return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    }
+
+    function formatarRestante(ms) {
+      if (ms < 0) ms = 0;
+      const total = Math.ceil(ms / 1000);
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) return h + "h " + String(m).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function atualizarStatusRelogio() {
+      const partes = [];
+      if (timerFim) partes.push("Timer: " + formatarRestante(timerFim - Date.now()));
+      if (alarmeEm) {
+        const quando = new Date(alarmeEm);
+        partes.push("Alarme: " + quando.toLocaleString("pt-BR") + " (" + formatarRestante(alarmeEm - Date.now()) + ")");
+      }
+      if (alertaAte && Date.now() < alertaAte) partes.push("Alertando agora");
+      relogioStatus.textContent = partes.length ? partes.join(" · ") : "Nada ligado agora.";
+    }
+
+    function limparTimer() {
+      if (timerId) clearTimeout(timerId);
+      if (timerTick) clearInterval(timerTick);
+      timerId = null;
+      timerTick = null;
+      timerFim = 0;
+    }
+
+    function limparAlarme() {
+      if (alarmeTick) clearInterval(alarmeTick);
+      alarmeTick = null;
+      alarmeEm = 0;
+    }
+
+    function pararAlerta() {
+      if (alertaTick) clearInterval(alertaTick);
+      if (alertaSom) clearInterval(alertaSom);
+      alertaTick = null;
+      alertaSom = null;
+      alertaAte = 0;
+      alertaVisual.hidden = true;
+      alertaBarra.hidden = true;
+      atualizarStatusRelogio();
+    }
+
+    function tocarBip() {
+      const ctx = garantirAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      setTimeout(function () {
+        try { osc.stop(); } catch (e) {}
+      }, 180);
+    }
+
+    function dispararAlerta(titulo) {
+      garantirAudio();
+      const segundos = segundosAlarmeOk(params.segundosAlarme);
+      alertaAte = Date.now() + segundos * 1000;
+      alertaTexto.textContent = titulo + " · " + segundos + "s";
+      alertaVisual.hidden = false;
+      alertaBarra.hidden = false;
+      tocarBip();
+      if (alertaSom) clearInterval(alertaSom);
+      alertaSom = setInterval(tocarBip, 700);
+      if (alertaTick) clearInterval(alertaTick);
+      alertaTick = setInterval(function () {
+        if (Date.now() >= alertaAte) {
+          pararAlerta();
+          return;
+        }
+        atualizarStatusRelogio();
+      }, 200);
+      atualizarStatusRelogio();
+      mostrarToast(titulo);
+    }
+
+    function abrirRelogio() {
+      garantirAudio();
+      if (!document.getElementById("alarme-data").value) {
+        document.getElementById("alarme-data").value = hojeISO();
+      }
+      if (!document.getElementById("alarme-hora").value) {
+        document.getElementById("alarme-hora").value = horaAgoraMais(30);
+      }
+      atualizarStatusRelogio();
+      modalRelogio.hidden = false;
+    }
+
+    function fecharRelogio() {
+      modalRelogio.hidden = true;
+    }
+
+    function iniciarTimer() {
+      garantirAudio();
+      const minutos = Math.max(0, Math.floor(Number(document.getElementById("timer-minutos").value) || 0));
+      const segundos = Math.max(0, Math.min(59, Math.floor(Number(document.getElementById("timer-segundos").value) || 0)));
+      const totalMs = (minutos * 60 + segundos) * 1000;
+      if (totalMs < 1000) {
+        mostrarToast("Escolha pelo menos 1 segundo no timer.");
+        return;
+      }
+      limparTimer();
+      timerFim = Date.now() + totalMs;
+      timerId = setTimeout(function () {
+        limparTimer();
+        atualizarStatusRelogio();
+        dispararAlerta("Timer esgotado");
+      }, totalMs);
+      timerTick = setInterval(atualizarStatusRelogio, 250);
+      atualizarStatusRelogio();
+      mostrarToast("Timer ligado: " + formatarRestante(totalMs));
+    }
+
+    function pararTimer() {
+      limparTimer();
+      atualizarStatusRelogio();
+      mostrarToast("Timer parado.");
+    }
+
+    function ligarAlarme() {
+      garantirAudio();
+      const data = document.getElementById("alarme-data").value;
+      const hora = document.getElementById("alarme-hora").value;
+      if (!data || !hora) {
+        mostrarToast("Informe data e hora do alarme.");
+        return;
+      }
+      const alvo = new Date(data + "T" + hora + ":00");
+      if (Number.isNaN(alvo.getTime())) {
+        mostrarToast("Data ou hora inválida.");
+        return;
+      }
+      const diff = alvo.getTime() - Date.now();
+      if (diff < 1000) {
+        mostrarToast("Escolha um horário pelo menos 1 segundo no futuro.");
+        return;
+      }
+      limparAlarme();
+      alarmeEm = alvo.getTime();
+      alarmeTick = setInterval(function () {
+        if (!alarmeEm) return;
+        if (Date.now() >= alarmeEm) {
+          limparAlarme();
+          atualizarStatusRelogio();
+          dispararAlerta("Alarme");
+          return;
+        }
+        atualizarStatusRelogio();
+      }, 250);
+      atualizarStatusRelogio();
+      mostrarToast("Alarme ligado para " + alvo.toLocaleString("pt-BR"));
+    }
+
+    function desligarAlarme() {
+      limparAlarme();
+      atualizarStatusRelogio();
+      mostrarToast("Alarme desligado.");
+    }
+
+    document.getElementById("btn-novo").addEventListener("click", abrirModal);
+    document.getElementById("btn-cancelar").addEventListener("click", fecharModal);
+    document.getElementById("btn-exportar").addEventListener("click", exportar);
+    document.getElementById("btn-importar").addEventListener("click", function () {
+      arquivoJson.value = "";
+      arquivoJson.click();
+    });
+    document.getElementById("btn-parametros").addEventListener("click", abrirParametros);
+    document.getElementById("btn-comp-parametros").addEventListener("click", abrirParametrosComp);
+    document.getElementById("btn-relogio").addEventListener("click", abrirRelogio);
+    document.getElementById("btn-relogio-fechar").addEventListener("click", fecharRelogio);
+    document.getElementById("btn-timer-iniciar").addEventListener("click", iniciarTimer);
+    document.getElementById("btn-timer-parar").addEventListener("click", pararTimer);
+    document.getElementById("btn-alarme-ligar").addEventListener("click", ligarAlarme);
+    document.getElementById("btn-alarme-desligar").addEventListener("click", desligarAlarme);
+    document.getElementById("btn-alerta-parar").addEventListener("click", pararAlerta);
+    document.getElementById("btn-param-cancelar").addEventListener("click", fecharParametros);
+    document.getElementById("btn-param-padrao").addEventListener("click", function () {
+      const confirma = window.confirm(
+        "VOLTAR AO PADRÃO — Individual (zera este navegador)\n\n" +
+        "Isto limpa TUDO do Individual e joga os exemplos de volta:\n" +
+        "• Apaga TODOS os cards do quadro\n" +
+        "• Apaga TODOS os arquivados\n" +
+        "• Restaura os cards de exemplo\n" +
+        "• Restaura textos, cores e tema padrão\n\n" +
+        "Não mexe no Compartilhado.\n\n" +
+        "Se quiser guardar, cancele e use antes \"Salvar cópia do quadro\" (depois \"Trazer cópia\").\n\n" +
+        "Continuar e zerar o Individual?"
+      );
+      if (!confirma) return;
+      const chaveGuardada = params.chaveHost || "";
+      const portaGuardada = params.portaCompartilhado || PARAMS_PADRAO.portaCompartilhado;
+      params = Object.assign({}, PARAMS_PADRAO, {
+        chaveHost: chaveGuardada,
+        portaCompartilhado: portaGuardada
+      });
+      state.cards = sanitizarCards(exemplos());
+      state.arquivados = [];
+      salvar();
+      preencherFormParametros();
+      salvarParametros();
+      aplicarParametros();
+      render();
+      atualizarBotaoArquivados();
+      fecharParametros();
+      mostrarToast("Individual zerado: exemplos e visual padrão de volta.");
+    });
+
+    document.getElementById("btn-limpar-dados").addEventListener("click", function () {
+      const n = (state.cards || []).length;
+      if (!n) {
+        mostrarToast("Não há cards no Individual para limpar.");
+        return;
+      }
+      const confirma = window.confirm(
+        "LIMPAR DADOS — Individual\n\n" +
+        "• " + n + " card(s) saem do quadro e vão para Arquivados\n" +
+        "• Cada um fica marcado com a coluna de origem e \"Limpar dados\"\n" +
+        "• Arquivados que já existiam permanecem\n" +
+        "• Parâmetros e Compartilhado não mudam\n\n" +
+        "Continuar?"
+      );
+      if (!confirma) return;
+      if (!Array.isArray(state.arquivados)) state.arquivados = [];
+      const agora = agoraLocalIso();
+      const movidos = state.cards.slice();
+      movidos.forEach(function (card) {
+        state.arquivados.unshift({
+          id: card.id,
+          titulo: card.titulo,
+          solicitante: card.solicitante,
+          prioridade: card.prioridade,
+          criadoEm: card.criadoEm || "",
+          criadoPor: card.criadoPor || "local",
+          deColuna: card.column,
+          descartadoEm: agora,
+          descartadoPor: "Limpar dados"
+        });
+      });
+      state.cards = [];
+      salvar();
+      render();
+      atualizarBotaoArquivados();
+      mostrarToast(movidos.length + " card(s) arquivado(s) pelo Limpar dados.");
+    });
+
+    modal.addEventListener("click", function (evento) {
+      if (evento.target === modal) fecharModal();
+    });
+
+    modalParametros.addEventListener("click", function (evento) {
+      if (evento.target === modalParametros) fecharParametros();
+    });
+
+    modalRelogio.addEventListener("click", function (evento) {
+      if (evento.target === modalRelogio) fecharRelogio();
+    });
+
+    formParametros.addEventListener("submit", function (evento) {
+      evento.preventDefault();
+      const dados = new FormData(formParametros);
+      params = montarParametros({
+        tituloPagina: String(dados.get("tituloPagina") || ""),
+        subtitulo: String(dados.get("subtitulo") || ""),
+        regras: String(dados.get("regras") || ""),
+        rodape: String(dados.get("rodape") || ""),
+        tituloModal: String(dados.get("tituloModal") || ""),
+        notaModal: String(dados.get("notaModal") || ""),
+        rotuloTitulo: String(dados.get("rotuloTitulo") || ""),
+        placeholderTitulo: String(dados.get("placeholderTitulo") || ""),
+        rotuloSolicitante: String(dados.get("rotuloSolicitante") || ""),
+        placeholderSolicitante: String(dados.get("placeholderSolicitante") || ""),
+        botaoNovo: String(dados.get("botaoNovo") || ""),
+        botaoAdicionar: String(dados.get("botaoAdicionar") || ""),
+        prefixoSolicitante: String(dados.get("prefixoSolicitante") || ""),
+        fonte: String(dados.get("fonte") || ""),
+        corCabecalho: String(dados.get("corCabecalho") || ""),
+        corTextoCabecalho: String(dados.get("corTextoCabecalho") || ""),
+        corFundo: String(dados.get("corFundo") || ""),
+        corTexto: String(dados.get("corTexto") || ""),
+        corTextoSuave: String(dados.get("corTextoSuave") || ""),
+        corAlerta: String(dados.get("corAlerta") || ""),
+        corCard: String(dados.get("corCard") || ""),
+        corBacklog: String(dados.get("corBacklog") || ""),
+        corPriorizado: String(dados.get("corPriorizado") || ""),
+        corExecucao: String(dados.get("corExecucao") || ""),
+        corAguardando: String(dados.get("corAguardando") || ""),
+        corConcluido: String(dados.get("corConcluido") || ""),
+        segundosAlarme: String(dados.get("segundosAlarme") || ""),
+        slaHoras: String(dados.get("slaHoras") || ""),
+        portaCompartilhado: String(dados.get("portaCompartilhado") || ""),
+        chaveHost: String(dados.get("chaveHost") || "")
+      });
+      iniciarMonitorCompartilhado();
+      salvarParametros();
+      aplicarParametros();
+      render();
+      fecharParametros();
+      mostrarToast("Parâmetros do Individual salvos neste navegador.");
+    });
+
+    document.getElementById("btn-param-comp-cancelar").addEventListener("click", fecharParametrosComp);
+    modalParametrosComp.addEventListener("click", function (evento) {
+      if (evento.target === modalParametrosComp) fecharParametrosComp();
+    });
+    formParametrosComp.addEventListener("submit", async function (evento) {
+      evento.preventDefault();
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Só o host salva os parâmetros da sala.");
+        return;
+      }
+      const dados = new FormData(formParametrosComp);
+      const salaNova = montarParametrosSala({
+        tituloPagina: String(dados.get("tituloPagina") || ""),
+        subtitulo: String(dados.get("subtitulo") || ""),
+        regras: String(dados.get("regras") || ""),
+        rodape: String(dados.get("rodape") || ""),
+        tituloModal: String(dados.get("tituloModal") || ""),
+        notaModal: String(dados.get("notaModal") || ""),
+        rotuloTitulo: String(dados.get("rotuloTitulo") || ""),
+        placeholderTitulo: String(dados.get("placeholderTitulo") || ""),
+        rotuloSolicitante: String(dados.get("rotuloSolicitante") || ""),
+        placeholderSolicitante: String(dados.get("placeholderSolicitante") || ""),
+        botaoNovo: String(dados.get("botaoNovo") || ""),
+        botaoAdicionar: String(dados.get("botaoAdicionar") || ""),
+        prefixoSolicitante: String(dados.get("prefixoSolicitante") || ""),
+        fonte: String(dados.get("fonte") || ""),
+        corCabecalho: String(dados.get("corCabecalho") || ""),
+        corTextoCabecalho: String(dados.get("corTextoCabecalho") || ""),
+        corFundo: String(dados.get("corFundo") || ""),
+        corTexto: String(dados.get("corTexto") || ""),
+        corTextoSuave: String(dados.get("corTextoSuave") || ""),
+        corAlerta: String(dados.get("corAlerta") || ""),
+        corCard: String(dados.get("corCard") || ""),
+        corBacklog: String(dados.get("corBacklog") || ""),
+        corPriorizado: String(dados.get("corPriorizado") || ""),
+        corExecucao: String(dados.get("corExecucao") || ""),
+        corAguardando: String(dados.get("corAguardando") || ""),
+        corConcluido: String(dados.get("corConcluido") || ""),
+        slaHoras: String(dados.get("slaHoras") || ""),
+        syncPingMinSeg: String(dados.get("syncPingMinSeg") || ""),
+        syncPingMaxSeg: String(dados.get("syncPingMaxSeg") || ""),
+        syncPingSeg: String(dados.get("syncPingSeg") || "")
+      });
+      try {
+        const r = await fetch(apiBase() + "/api/host/sala-params", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ sala: salaNova })
+        });
+        const resp = await r.json();
+        if (!r.ok) throw new Error(resp.erro || "Falha ao salvar sala");
+        receberSalaDoServidor(resp.quadro || resp);
+        fecharParametrosComp();
+        mostrarToast("Parâmetros da sala salvos. Convidados atualizam no próximo ciclo.");
+      } catch (e) {
+        mostrarToast(e.message || "Não salvou a sala.");
+      }
+    });
+
+    formNovo.addEventListener("submit", async function (evento) {
+      evento.preventDefault();
+      const dados = new FormData(formNovo);
+      const titulo = String(dados.get("titulo") || "").trim();
+      const prioridadeBruta = String(dados.get("prioridade") || "normal");
+      const prioridade = prioridadeBruta === "alta" || prioridadeBruta === "baixa" ? prioridadeBruta : "normal";
+      if (!titulo) return;
+
+      if (modalNovoModo === "comp") {
+        if (!sessaoComp) {
+          mostrarToast("Sessão do compartilhado caiu. Entre de novo.");
+          return;
+        }
+        const solicitante = (sessaoComp.nome || "").trim();
+        if (!solicitante) return;
+        try {
+          const r = await fetch(apiBase() + "/api/cards", {
+            method: "POST",
+            headers: headersComp(),
+            body: JSON.stringify({
+              titulo: titulo.slice(0, 180),
+              solicitante: solicitante.slice(0, 80),
+              prioridade: prioridade,
+              column: "backlog"
+            })
+          });
+          const resp = await r.json();
+          if (!r.ok) throw new Error(resp.erro || "Falha");
+          quadroComp = resp.quadro;
+          renderCompartilhado();
+          fecharModal();
+          mostrarToast("Card incluído no compartilhado (Backlog / Fila).");
+        } catch (e) {
+          mostrarToast(e.message || "Não criou o card.");
+        }
+        return;
+      }
+
+      const solicitante = String(dados.get("solicitante") || "").trim();
+      if (!solicitante) return;
+      const novo = garantirMetaCard({
+        id: novoId(),
+        column: "backlog",
+        titulo: titulo.slice(0, 180),
+        solicitante: solicitante.slice(0, 80),
+        prioridade: prioridade,
+        criadoEm: agoraLocalIso(),
+        criadoPor: "local",
+        historico: []
+      });
+      registrarHistorico(novo, null, "backlog", "criou");
+      state.cards.push(novo);
+      salvar();
+      render();
+      fecharModal();
+      mostrarToast("Card incluído em Backlog / Fila.");
+    });
+
+    arquivoJson.addEventListener("change", function () {
+      const arquivo = arquivoJson.files && arquivoJson.files[0];
+      if (!arquivo) return;
+      const leitor = new FileReader();
+      leitor.onload = function () {
+        try {
+          importarTexto(String(leitor.result || ""));
+        } catch (erro) {
+          const mensagem = erro instanceof SyntaxError
+            ? "Este arquivo não é uma cópia válida do quadro."
+            : (erro && erro.message ? erro.message : "Não foi possível trazer a cópia.");
+          mostrarToast(mensagem);
+        }
+      };
+      leitor.onerror = function () {
+        mostrarToast("Não foi possível ler o arquivo.");
+      };
+      leitor.readAsText(arquivo, "UTF-8");
+    });
+
+    document.addEventListener("keydown", function (evento) {
+      if (evento.key !== "Escape") return;
+      if (!alertaBarra.hidden) {
+        pararAlerta();
+        return;
+      }
+      if (!modalRelogio.hidden) {
+        fecharRelogio();
+        return;
+      }
+      if (!modalParametros.hidden) {
+        fecharParametros();
+        return;
+      }
+      if (!modal.hidden) fecharModal();
+    });
+
+    board.addEventListener("dragstart", function (evento) {
+      const card = evento.target.closest(".card");
+      if (!card) return;
+      arrastandoId = card.dataset.id;
+      card.classList.add("dragging");
+      evento.dataTransfer.effectAllowed = "move";
+      evento.dataTransfer.setData("text/plain", card.dataset.id);
+    });
+
+    board.addEventListener("dragover", function (evento) {
+      if (!evento.target.closest(".column")) return;
+      evento.preventDefault();
+      evento.dataTransfer.dropEffect = "move";
+      board.querySelectorAll(".column.drag-over").forEach(function (coluna) {
+        coluna.classList.remove("drag-over");
+      });
+      evento.target.closest(".column").classList.add("drag-over");
+    });
+
+    board.addEventListener("dragleave", function (evento) {
+      const coluna = evento.target.closest(".column");
+      if (!coluna) return;
+      if (!coluna.contains(evento.relatedTarget)) coluna.classList.remove("drag-over");
+    });
+
+    board.addEventListener("drop", function (evento) {
+      const coluna = evento.target.closest(".column");
+      if (!coluna) return;
+      evento.preventDefault();
+      const id = evento.dataTransfer.getData("text/plain") || arrastandoId;
+      const alvo = evento.target.closest(".card");
+      const beforeId = alvo ? alvo.dataset.id : null;
+      arrastandoId = null;
+      if (!id || beforeId === id) {
+        board.querySelectorAll(".drag-over, .dragging").forEach(function (no) {
+          no.classList.remove("drag-over", "dragging");
+        });
+        return;
+      }
+      moverCard(id, coluna.dataset.column, beforeId);
+    });
+
+    board.addEventListener("dragend", function () {
+      arrastandoId = null;
+      board.querySelectorAll(".drag-over, .dragging").forEach(function (no) {
+        no.classList.remove("drag-over", "dragging");
+      });
+    });
+
+    board.addEventListener("keydown", function (evento) {
+      const card = evento.target.closest(".card");
+      if (!card) return;
+      if (evento.key !== "ArrowRight" && evento.key !== "ArrowLeft") return;
+      const ordem = COLUMNS.map(function (col) { return col.id; });
+      const indice = ordem.indexOf(card.dataset.column);
+      const proximo = evento.key === "ArrowRight" ? indice + 1 : indice - 1;
+      if (proximo < 0 || proximo >= ordem.length) return;
+      evento.preventDefault();
+      const id = card.dataset.id;
+      moverCard(id, ordem[proximo], null);
+      focarCard(id);
+    });
+
+    // ===== Compartilhado (off por padrão; só clica se o host ligar o serviço) =====
+    const tabIndividual = document.getElementById("tab-individual");
+    const tabCompartilhado = document.getElementById("tab-compartilhado");
+    const boardComp = document.getElementById("board-comp");
+    let compAtivoNaRede = false;
+    let sessaoComp = null;
+    let pollComp = null;
+    let monitorComp = null;
+    let quadroComp = { cards: [], usuarios: [] };
+    let pollCompMsAtual = 0;
+
+    function apiBase() {
+      const porta = params.portaCompartilhado || 8777;
+      const host = (location.protocol === "http:" || location.protocol === "https:") ? location.hostname : "127.0.0.1";
+      return "http://" + host + ":" + porta;
+    }
+
+    function intervaloSyncMs() {
+      return normalizarSyncPing(paramsSala).syncPingMs;
+    }
+
+    function reiniciarPollComp() {
+      if (!sessaoComp) return;
+      const ms = intervaloSyncMs();
+      if (pollComp && pollCompMsAtual === ms) return;
+      if (pollComp) clearInterval(pollComp);
+      pollComp = setInterval(atualizarCompartilhado, ms);
+      pollCompMsAtual = ms;
+    }
+
+    function headersComp() {
+      const h = { "Content-Type": "application/json" };
+      if (sessaoComp) {
+        h["X-User-Id"] = String(sessaoComp.id);
+        h["X-User-Name"] = sessaoComp.nome;
+      }
+      if (params.chaveHost) h["X-Host-Key"] = params.chaveHost;
+      return h;
+    }
+
+    async function pingCompartilhado() {
+      try {
+        const r = await fetch(apiBase() + "/api/status", { method: "GET", cache: "no-store" });
+        if (!r.ok) throw new Error("off");
+        const dados = await r.json();
+        compAtivoNaRede = !!dados.ativo;
+      } catch (e) {
+        compAtivoNaRede = false;
+      }
+      // Aba sempre liberada: convidado pode abrir o login mesmo sem serviço neste PC.
+      // Entrar só funciona se neste endereço (URL) o host tiver a sala ligada.
+      tabCompartilhado.disabled = false;
+      tabCompartilhado.textContent = compAtivoNaRede ? "Compartilhado" : "Compartilhado";
+      tabCompartilhado.title = compAtivoNaRede
+        ? "Há serviço neste endereço — entre com nome + chave"
+        : "Sem serviço neste endereço. Ative neste PC ou abra a URL do host (http://IP:8765). Convidado não precisa de Python.";
+      return compAtivoNaRede;
+    }
+
+    function chaveSugeridaParaLogin() {
+      // Host deste PC: chave gerada em Parâmetros / ativação local.
+      let hostSala = "";
+      try {
+        hostSala = (localStorage.getItem(HOST_SALA_KEY) || "").trim();
+      } catch (e) { /* ignore */ }
+      if (hostSala && estePcAtivouEstaSala(hostSala)) return hostSala;
+      const minha = (params.chaveHost || "").trim();
+      if (minha && estePcAtivouEstaSala(minha)) return minha;
+      return "";
+    }
+
+    /** Última chave com que este navegador entrou como convidado (lembrete; pode trocar). */
+    function ultimaChaveConvidadoLembrada() {
+      const pref = lerPrefComp();
+      if (!pref || pref.comoHost) return "";
+      return String(pref.chave || "").trim();
+    }
+
+    function focarNomeComp() {
+      const nome = document.getElementById("comp-nome");
+      if (!nome) return;
+      nome.focus();
+      nome.select();
+    }
+
+    function limparQuadroCompLocal() {
+      quadroComp = { cards: [], usuarios: [], arquivados: [] };
+      paramsSala = Object.assign({}, PARAMS_SALA_PADRAO);
+    }
+
+    function urlApiLocal() {
+      if (location.protocol === "http:" || location.protocol === "https:") {
+        if (location.port === "8765" || location.port === "") {
+          return location.protocol + "//" + location.hostname + (location.port ? ":" + location.port : ":8765");
+        }
+      }
+      return "http://127.0.0.1:8765";
+    }
+
+    function novaChaveSala() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, "");
+      return String(Date.now()) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+    }
+
+    function dicaAtalhoHost() {
+      const ua = (navigator.platform || navigator.userAgent || "").toLowerCase();
+      if (ua.indexOf("mac") >= 0) return "Subir-Kanban.command";
+      return "Subir Kanban";
+    }
+
+    const CLIENTE_ID_KEY = "kanban-ti-visivel-demo-cliente-id";
+    const HOST_SALA_KEY = "kanban-ti-visivel-demo-host-sala";
+    const COMP_PREF_KEY = "kanban-ti-visivel-demo-comp-pref";
+
+    function obterClienteId() {
+      try {
+        let id = localStorage.getItem(CLIENTE_ID_KEY);
+        if (!id || id.length < 8) {
+          id = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID().replace(/-/g, "")
+            : ("c" + Date.now().toString(16) + Math.random().toString(16).slice(2));
+          localStorage.setItem(CLIENTE_ID_KEY, id);
+        }
+        return id;
+      } catch (e) {
+        return "temp" + String(Date.now());
+      }
+    }
+
+    function lerPrefComp() {
+      try {
+        return JSON.parse(localStorage.getItem(COMP_PREF_KEY) || "null");
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function salvarPrefComp(patch) {
+      try {
+        const atual = lerPrefComp() || {};
+        const nome = (document.getElementById("comp-nome").value || "").trim();
+        const chave = (document.getElementById("comp-chave").value || params.chaveHost || "").trim();
+        const proximo = Object.assign({}, atual, {
+          nome: nome || atual.nome || "",
+          chave: chave || atual.chave || "",
+          aba: "comp"
+        }, patch || {});
+        localStorage.setItem(COMP_PREF_KEY, JSON.stringify(proximo));
+      } catch (e) {}
+    }
+
+    function marcarAbaPreferida(aba) {
+      try {
+        const atual = lerPrefComp() || {};
+        atual.aba = aba;
+        localStorage.setItem(COMP_PREF_KEY, JSON.stringify(atual));
+      } catch (e) {}
+    }
+
+    function marcarEstePcComoHostDaSala(chave) {
+      try {
+        localStorage.setItem(HOST_SALA_KEY, String(chave || "").trim());
+      } catch (e) {}
+    }
+
+    function estePcAtivouEstaSala(chave) {
+      try {
+        const c = String(chave || "").trim();
+        if (!c) return false;
+        const salva = (localStorage.getItem(HOST_SALA_KEY) || "").trim();
+        if (salva && salva === c) return true;
+        // Chave gerada/reativada neste navegador (Parâmetros → Gerar/Reativar)
+        const local = (params.chaveHost || "").trim();
+        if (local && local === c) {
+          marcarEstePcComoHostDaSala(c);
+          return true;
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function confirmarSouHostNestePc(chave) {
+      const c = String(chave || "").trim();
+      if (!c) return false;
+      if (estePcAtivouEstaSala(c)) return true;
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/compartilhado/confirmar-host", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chave: c })
+        });
+        if (!r.ok) return false;
+        const dados = await r.json();
+        if (dados && dados.souHost) {
+          marcarEstePcComoHostDaSala(c);
+          params.chaveHost = c;
+          if (formParametros && formParametros.chaveHost) formParametros.chaveHost.value = c;
+          salvarParametros();
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function atualizarAvisoPapelLogin() {
+      const aviso = document.getElementById("comp-papel-aviso");
+      if (!aviso) return;
+      const chave = (document.getElementById("comp-chave").value || params.chaveHost || "").trim();
+      if (estePcAtivouEstaSala(chave)) {
+        aviso.textContent = "Neste PC a sala foi ativada: ao entrar você será o host (ID 0). Reset, backup e parâmetros só daqui.";
+      } else {
+        aviso.textContent = "Entrada como convidado. A chave só conecta ao quadro — não dá privilégio de host em outro computador.";
+      }
+    }
+
+    async function ligarCompartilhadoComChave(chave, mensagemOk) {
+      const r = await fetch(urlApiLocal() + "/api/local/compartilhado/ligar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chave: chave })
+      });
+      const dados = await r.json().catch(function () { return {}; });
+      if (!r.ok) throw new Error(dados.erro || "Não foi possível ligar o serviço.");
+      const usada = dados.chave || chave;
+      params.chaveHost = usada;
+      formParametros.chaveHost.value = usada;
+      salvarParametros();
+      document.getElementById("comp-chave").value = usada;
+      marcarEstePcComoHostDaSala(usada);
+      await pingCompartilhado();
+      fecharParametros();
+      await irParaCompartilhadoLogin();
+      mostrarToast(mensagemOk || "Serviço ligado neste PC. Digite seu nome e entre como host.");
+      return dados;
+    }
+
+    function chaveHostLocalConhecida() {
+      let chave = (params.chaveHost || "").trim();
+      try {
+        if (!chave && formParametros && formParametros.chaveHost) {
+          chave = String(formParametros.chaveHost.value || "").trim();
+        }
+        if (!chave) chave = (localStorage.getItem(HOST_SALA_KEY) || "").trim();
+      } catch (e) { /* ignore */ }
+      return chave;
+    }
+
+    /** Já criou/ativou sala neste PC pelo menos uma vez (navegador ou arquivo de chave). */
+    async function estePcJaCriouSalaUmaVez() {
+      const local = chaveHostLocalConhecida();
+      if (local && local.length >= 8) return true;
+      try {
+        if ((localStorage.getItem(HOST_SALA_KEY) || "").trim()) return true;
+      } catch (e) { /* ignore */ }
+      if (typeof servicoKanbanLocalAtivo === "function" && !servicoKanbanLocalAtivo()) return false;
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/status", { method: "GET", cache: "no-store" });
+        if (!r.ok) return false;
+        const dados = await r.json();
+        return !!(dados && dados.chaveDefinida);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    /** Se este PC já ativou a sala uma vez e a 8777 está off, religa sob demanda (sem nova chave). */
+    async function garantirCompartilhadoSobDemanda() {
+      await pingCompartilhado();
+      if (compAtivoNaRede) return true;
+      if (typeof servicoKanbanLocalAtivo === "function" && !servicoKanbanLocalAtivo()) return false;
+      let chave = chaveHostLocalConhecida();
+      const campo = document.getElementById("comp-chave");
+      if ((!chave || chave.length < 8) && campo) chave = (campo.value || "").trim();
+      if (!chave || chave.length < 8) {
+        // Arquivo no host sem params no navegador: pede religar gerando? Não — só se já host.
+        try {
+          const r = await fetch(urlApiLocal() + "/api/local/status", { method: "GET", cache: "no-store" });
+          const dados = await r.json().catch(function () { return {}; });
+          if (!(dados && dados.chaveDefinida)) return false;
+          // Sem chave no browser: Reativar exige chave conhecida; tenta confirmar via ligar só se params tiver.
+          return false;
+        } catch (e) {
+          return false;
+        }
+      }
+      if (!estePcAtivouEstaSala(chave)) {
+        // Mesmo assim, se a chave do arquivo local bater, marcar e ligar.
+        const sou = await confirmarSouHostNestePc(chave);
+        if (!sou) return false;
+      }
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/compartilhado/ligar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chave: chave })
+        });
+        const dados = await r.json().catch(function () { return {}; });
+        if (!r.ok) return false;
+        const usada = (dados.chave || chave).trim();
+        params.chaveHost = usada;
+        if (formParametros && formParametros.chaveHost) formParametros.chaveHost.value = usada;
+        salvarParametros();
+        if (campo) campo.value = usada;
+        marcarEstePcComoHostDaSala(usada);
+        await pingCompartilhado();
+        return !!compAtivoNaRede;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function aoClicarAbaCompartilhado() {
+      await pingCompartilhado();
+      const jaCriou = await estePcJaCriouSalaUmaVez();
+
+      if (!jaCriou) {
+        const querSerHost = window.confirm(
+          "Compartilhado — primeira vez neste PC\n\n" +
+          "OK = criar e compartilhar uma sala AQUI (você vira host; sobe o serviço sob demanda).\n" +
+          "Cancelar = só abrir a tela para entrar como CONVIDADO em outra sala (use a URL e a chave do host).\n\n" +
+          "Quer mesmo compartilhar uma sala neste computador?"
+        );
+        if (querSerHost) {
+          if (typeof servicoKanbanLocalAtivo === "function" && !servicoKanbanLocalAtivo()) {
+            mostrarToast("Abra pelo atalho " + dicaAtalhoHost() + " neste PC para criar a sala.");
+            mostrarModoCompartilhado({ silenciarAvisoOff: true });
+            return;
+          }
+          try {
+            await ligarCompartilhadoComChave(
+              novaChaveSala(),
+              "Sala criada neste PC. Você é o host — digite seu nome e entre. Copie a chave aos convidados."
+            );
+          } catch (e) {
+            mostrarToast("Não criou a sala. Abra pelo " + dicaAtalhoHost() + " e tente de novo.");
+            mostrarModoCompartilhado({ silenciarAvisoOff: true });
+          }
+          return;
+        }
+        // Convidado: foca no nome; sugere só a última chave de convidado (se houver). Pode trocar.
+        mostrarModoCompartilhado({ silenciarAvisoOff: true, modoConvidado: true });
+        focarNomeComp();
+        return;
+      }
+
+      // Já ativou antes: sob demanda se estiver off; chave do host local pode pré-preencher.
+      let reativou = false;
+      if (!compAtivoNaRede) {
+        reativou = await garantirCompartilhadoSobDemanda();
+      }
+      mostrarModoCompartilhado({ silenciarAvisoOff: true, preencherChaveHost: true });
+      if (sessaoComp) {
+        atualizarCompartilhado();
+        return;
+      }
+      focarNomeComp();
+      if (reativou) {
+        mostrarToast("Compartilhado reativado sob demanda. Digite seu nome e entre.");
+      } else if (!compAtivoNaRede) {
+        mostrarToast(
+          "Sala off neste endereço. Use Parâmetros → Reativar, ou abra a URL do host (convidado não precisa de Python)."
+        );
+      }
+    }
+
+    async function reativarComMesmaChave() {
+      const existente = (formParametros.chaveHost.value || params.chaveHost || "").trim();
+      if (!existente || existente.length < 8) {
+        mostrarToast("Ainda não há chave neste PC. Use “Gerar nova chave e ativar” na primeira vez.");
+        return;
+      }
+      try {
+        await ligarCompartilhadoComChave(
+          existente,
+          "Reativado com a mesma chave. Quadro neste PC intacto. Digite seu nome e entre."
+        );
+      } catch (e) {
+        mostrarToast("Abra pelo atalho " + dicaAtalhoHost() + " e tente Reativar de novo.");
+      }
+    }
+
+    async function gerarChaveEAtivar() {
+      const chave = novaChaveSala();
+      try {
+        await ligarCompartilhadoComChave(
+          chave,
+          "Nova chave gerada e serviço ligado. Quadro neste PC intacto; passe a chave nova à equipe."
+        );
+      } catch (e) {
+        mostrarToast("Abra pelo atalho " + dicaAtalhoHost() + " neste computador e tente de novo.");
+      }
+    }
+
+    async function carregarPreviewCompartilhado() {
+      try {
+        const r = await fetch(apiBase() + "/api/quadro", { method: "GET", cache: "no-store" });
+        if (r.ok) {
+          const dados = await r.json();
+          quadroComp = {
+            cards: dados.cards || [],
+            usuarios: dados.usuarios || [],
+            arquivados: dados.arquivados || []
+          };
+          receberSalaDoServidor(dados);
+        }
+      } catch (e) {
+        if (!quadroComp) quadroComp = { cards: [], usuarios: [], arquivados: [] };
+      }
+    }
+
+    async function irParaCompartilhadoLogin() {
+      // Vem de Gerar/Reativar neste PC → pode pré-preencher a chave do host local.
+      mostrarModoCompartilhado({ silenciarAvisoOff: true, preencherChaveHost: true });
+      focarNomeComp();
+    }
+
+    async function desligarCompartilhadoLocal() {
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/compartilhado/desligar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}"
+        });
+        const dados = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error(dados.erro || "Falha ao desligar.");
+        // Mantém chave + SQLite neste PC; só tira a sala da rede.
+        // HOST_SALA_KEY permanece: este navegador continua sendo o organizador da sala.
+        if (sessaoComp) {
+          sessaoComp = null;
+          if (pollComp) clearInterval(pollComp);
+          pollComp = null;
+        }
+        await pingCompartilhado();
+        mostrarModoIndividual();
+        mostrarToast("Serviço desligado. Quadro e chave continuam neste PC — use Reativar para voltar.");
+      } catch (e) {
+        mostrarToast((e && e.message) || "Não desligou. Use o atalho Parar Kanban se precisar.");
+      }
+    }
+
+    const APP_OFF_KEY = "kanban-ti-visivel-demo-app-off";
+
+    function servicoKanbanLocalAtivo() {
+      return location.protocol === "http:" && (location.port === "8765" || location.port === "");
+    }
+
+    function atualizarBotaoDesligarGeral() {
+      const btn = document.getElementById("btn-desligar-geral");
+      if (!btn) return;
+      btn.hidden = !servicoKanbanLocalAtivo() || document.body.classList.contains("app-desligada");
+    }
+
+    function marcarAppDesligadaVisual() {
+      try {
+        localStorage.setItem(APP_OFF_KEY, "1");
+      } catch (e) { /* ignore */ }
+      const tela = document.getElementById("tela-desligada");
+      if (tela) {
+        tela.hidden = false;
+        const dica = document.querySelector("#tela-desligada p");
+        if (dica) {
+          dica.innerHTML =
+            "Sessões e serviços encerrados neste PC. O quadro nos arquivos continua.<br>" +
+            "Para voltar, use o atalho <strong>" + dicaAtalhoHost() + "</strong>.";
+        }
+      }
+      document.body.classList.add("app-desligada");
+      const btn = document.getElementById("btn-desligar-geral");
+      if (btn) {
+        btn.disabled = true;
+        btn.hidden = true;
+      }
+    }
+
+    function limparAppDesligadaVisual() {
+      try {
+        localStorage.removeItem(APP_OFF_KEY);
+      } catch (e) { /* ignore */ }
+      document.body.classList.remove("app-desligada");
+      const tela = document.getElementById("tela-desligada");
+      if (tela) tela.hidden = true;
+      atualizarBotaoDesligarGeral();
+    }
+
+    function appMarcadaDesligadaNoCache() {
+      try {
+        return localStorage.getItem(APP_OFF_KEY) === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function reconciliarTelaDesligada() {
+      if (appMarcadaDesligadaNoCache()) {
+        marcarAppDesligadaVisual();
+      }
+      if (!servicoKanbanLocalAtivo()) return;
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/status", { method: "GET", cache: "no-store" });
+        if (r.ok) {
+          limparAppDesligadaVisual();
+        }
+      } catch (e) {
+        if (appMarcadaDesligadaNoCache()) marcarAppDesligadaVisual();
+      }
+    }
+
+    async function desligarAplicacaoKanban() {
+      const aviso =
+        "Desligar a aplicação Kanban neste PC?\n\n" +
+        "Isso encerra as sessões e os serviços (página na 8765 e compartilhado na 8777).\n" +
+        "Não desliga o Windows nem o Mac.\n" +
+        "O quadro nos arquivos continua — para voltar, use o atalho " + dicaAtalhoHost() + ".";
+      if (!window.confirm(aviso)) return;
+      try {
+        const r = await fetch(urlApiLocal() + "/api/local/encerrar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}"
+        });
+        const dados = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error(dados.erro || "Não encerrou a aplicação.");
+        if (pollComp) {
+          clearInterval(pollComp);
+          pollComp = null;
+        }
+        sessaoComp = null;
+        marcarAppDesligadaVisual();
+        mostrarToast("Kanban desligado. Sessões e serviços encerrados.");
+      } catch (e) {
+        // Mesmo se a API já caiu no meio, trata como desligado visualmente.
+        const msg = (e && e.message) || "";
+        if (/failed to fetch|network|fetch/i.test(msg) || appMarcadaDesligadaNoCache()) {
+          marcarAppDesligadaVisual();
+          mostrarToast("Kanban desligado. Sessões e serviços encerrados.");
+          return;
+        }
+        mostrarToast(msg || "Não encerrou. Use Parar Kanban / Parar-Kanban.command.");
+      }
+    }
+
+    async function copiarChaveHost() {
+      const chave = (formParametros.chaveHost.value || params.chaveHost || "").trim();
+      if (!chave) {
+        mostrarToast("Ainda não há chave. Clique em Gerar chave e ativar.");
+        return;
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(chave);
+        } else {
+          formParametros.chaveHost.select();
+          document.execCommand("copy");
+        }
+        mostrarToast("Chave copiada. Passe aos convidados.");
+      } catch (e) {
+        mostrarToast("Selecione a chave e copie com Ctrl+C.");
+      }
+    }
+
+    function iniciarMonitorCompartilhado() {
+      if (monitorComp) clearInterval(monitorComp);
+      pingCompartilhado();
+      monitorComp = setInterval(pingCompartilhado, 5000);
+    }
+
+    function mostrarModoIndividual() {
+      marcarAbaPreferida("ind");
+      document.body.classList.add("modo-individual");
+      document.body.classList.remove("modo-compartilhado");
+      tabIndividual.setAttribute("aria-pressed", "true");
+      tabCompartilhado.setAttribute("aria-pressed", "false");
+      document.getElementById("toolbar-individual").hidden = false;
+      document.getElementById("toolbar-compartilhado").hidden = true;
+      document.getElementById("painel-compartilhado-login").hidden = true;
+      aplicarParametros();
+      render();
+    }
+
+    function mostrarModoCompartilhado(opcoes) {
+      const silenciarAvisoOff = !!(opcoes && opcoes.silenciarAvisoOff);
+      const modoConvidado = !!(opcoes && opcoes.modoConvidado);
+      const preencherChaveHost = !!(opcoes && opcoes.preencherChaveHost) || !modoConvidado;
+      marcarAbaPreferida("comp");
+      const campoChave = document.getElementById("comp-chave");
+      if (modoConvidado) {
+        // Lembra a última sala em que entrou como convidado; para outra sala, basta trocar a chave.
+        campoChave.value = ultimaChaveConvidadoLembrada();
+      } else if (preencherChaveHost) {
+        const sugerida = chaveSugeridaParaLogin();
+        if (sugerida) campoChave.value = sugerida;
+        else if (!campoChave.value.trim()) campoChave.value = "";
+      }
+      atualizarAvisoPapelLogin();
+      document.body.classList.add("modo-compartilhado");
+      document.body.classList.remove("modo-individual");
+      tabIndividual.setAttribute("aria-pressed", "false");
+      tabCompartilhado.setAttribute("aria-pressed", "true");
+      document.getElementById("toolbar-individual").hidden = true;
+      document.getElementById("toolbar-compartilhado").hidden = false;
+      document.getElementById("painel-compartilhado-login").hidden = !!sessaoComp;
+      if (!sessaoComp) {
+        limparQuadroCompLocal();
+        if (!compAtivoNaRede && !silenciarAvisoOff) {
+          mostrarToast("Neste endereço a sala está off. Ative neste PC ou abra a URL do host (convidado não precisa de Python).");
+        }
+      } else if (!quadroComp || typeof quadroComp !== "object") {
+        quadroComp = { cards: [], usuarios: [], arquivados: [] };
+      }
+      if (!Array.isArray(quadroComp.cards)) quadroComp.cards = [];
+      aplicarParametros();
+      renderCompartilhado();
+    }
+
+    function atualizarBotoesCompartilhado() {
+      const dentro = !!sessaoComp;
+      const hostBtns = !!(sessaoComp && sessaoComp.papel === "host");
+      const idsComuns = [
+        "btn-comp-novo",
+        "btn-comp-relatorio",
+        "btn-comp-arquivados",
+        "btn-comp-tv",
+        "btn-comp-sair"
+      ];
+      idsComuns.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !dentro;
+        el.title = dentro ? "" : "Digite seu nome e clique em Entrar no compartilhado";
+      });
+      document.getElementById("btn-comp-parametros").hidden = !hostBtns;
+      document.getElementById("btn-comp-parametros").disabled = !hostBtns;
+      document.getElementById("btn-comp-exportar").hidden = !hostBtns;
+      document.getElementById("btn-comp-importar").hidden = !hostBtns;
+      document.getElementById("btn-comp-limpar-dados").hidden = !hostBtns;
+      document.getElementById("btn-comp-limpar-dados").disabled = !hostBtns;
+      document.getElementById("status-comp").textContent = dentro
+        ? ("Você: " + sessaoComp.id + " - " + sessaoComp.nome +
+          (hostBtns ? " (host)" : " (convidado)") + " · quadro compartilhado")
+        : "Digite o nome abaixo e Entrar para liberar os botões";
+    }
+
+    function renderCompartilhado() {
+      if (!boardComp) return;
+      if (!quadroComp || typeof quadroComp !== "object") {
+        quadroComp = { cards: [], usuarios: [], arquivados: [] };
+      }
+      const cards = Array.isArray(quadroComp.cards) ? quadroComp.cards : [];
+      boardComp.replaceChildren();
+      COLUMNS.forEach(function (col) {
+        const daColuna = cards.filter(function (c) { return c.column === col.id; });
+        const section = elemento("section", "column");
+        section.dataset.column = col.id;
+        section.style.background = corColuna(col.id);
+        const head = elemento("div", "col-head");
+        const textos = elemento("div");
+        textos.append(elemento("h2", null, col.nome), elemento("p", null, col.dica));
+        const contador = elemento("span", "contador", col.limite ? daColuna.length + "/" + col.limite : String(daColuna.length));
+        if (col.limite && daColuna.length >= col.limite) contador.classList.add(daColuna.length > col.limite ? "estouro" : "limite");
+        head.append(textos, contador);
+        const lista = elemento("div", "cards");
+        if (!daColuna.length) lista.append(elemento("p", "vazio", "Nenhum card nesta coluna"));
+        daColuna.forEach(function (card) {
+          const artigo = elemento("article", "card" + (card.prioridade === "normal" ? "" : " " + card.prioridade));
+          artigo.draggable = !document.body.classList.contains("tv-mode") && !!sessaoComp;
+          artigo.dataset.id = card.id;
+          artigo.dataset.column = card.column;
+          if (card.prioridade === "alta") artigo.append(elemento("span", "badge alta", "ALTA"));
+          if (card.prioridade === "baixa") artigo.append(elemento("span", "badge baixa", "BAIXA"));
+          if (slaEstourado(card)) artigo.append(elemento("span", "badge sla", "SLA"));
+          artigo.append(
+            elemento("h3", null, card.titulo),
+            elemento("p", "quem", paramsSala.prefixoSolicitante + " " + card.solicitante),
+            elemento("p", "meta-card", "Criado: " + formatarQuando(card.criadoEm) + " · " + (card.criadoPor || "?"))
+          );
+          if (sessaoComp && !document.body.classList.contains("tv-mode")) {
+            const acoes = elemento("div", "card-acoes");
+            const btnDesc = elemento("button", "perigo", "Descartar");
+            btnDesc.type = "button";
+            btnDesc.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+            btnDesc.addEventListener("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              descartarCardComp(card.id);
+            });
+            acoes.append(btnDesc);
+            artigo.append(acoes);
+          }
+          lista.append(artigo);
+        });
+        section.append(head, lista);
+        boardComp.append(section);
+      });
+      atualizarResumoCompartilhado();
+      atualizarBotaoArquivados();
+      const ul = document.getElementById("lista-online");
+      ul.replaceChildren();
+      (quadroComp.usuarios || []).forEach(function (u) {
+        const curto = u.clienteIdCurto || (u.clienteId ? String(u.clienteId).slice(0, 8) : "");
+        const extra = curto ? (" · id " + curto) : "";
+        ul.append(elemento("li", null, u.id + " - " + u.nome + extra + (u.papel === "host" ? " (host)" : "")));
+      });
+      atualizarBotoesCompartilhado();
+      const dica = document.getElementById("comp-dica");
+      if (dica) {
+        dica.textContent = sessaoComp
+          ? "Sincroniza sozinho (~2,5 s). Sem F5. Individual continua na outra aba."
+          : "Colunas visíveis. Nome + chave + Entrar liberam os botões.";
+      }
+    }
+
+    async function entrarCompartilhado(opcoes) {
+      const silencioso = !!(opcoes && opcoes.silencioso);
+      const nome = document.getElementById("comp-nome").value.trim();
+      // Convidado: só o que estiver no campo. Host local: campo ou chave gerada neste PC.
+      let chave = document.getElementById("comp-chave").value.trim();
+      if (!chave) {
+        const hostLocal = chaveSugeridaParaLogin();
+        if (hostLocal) chave = hostLocal;
+      }
+      if (!nome) {
+        if (!silencioso) mostrarToast("Informe um nome para entrar.");
+        return false;
+      }
+      if (!chave) {
+        if (!silencioso) mostrarToast("Cole a chave válida da sala (recebida do host).");
+        return false;
+      }
+      // Host = este PC gerou/guarda a chave (localStorage, params ou arquivo via API local)
+      const comoHost = await confirmarSouHostNestePc(chave);
+      if (comoHost) {
+        params.chaveHost = chave;
+        formParametros.chaveHost.value = chave;
+        salvarParametros();
+        marcarEstePcComoHostDaSala(chave);
+      }
+      const clienteId = obterClienteId();
+      const corpo = {
+        nome: nome,
+        papel: comoHost ? "host" : "convidado",
+        chaveHost: chave,
+        clienteId: clienteId
+      };
+      async function tentarEntrar() {
+        const r = await fetch(apiBase() + "/api/entrar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(corpo)
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha ao entrar");
+        return dados;
+      }
+      try {
+        if (comoHost && !compAtivoNaRede) {
+          await garantirCompartilhadoSobDemanda();
+        }
+        let dados;
+        try {
+          dados = await tentarEntrar();
+        } catch (e1) {
+          if (comoHost) {
+            const ok = await garantirCompartilhadoSobDemanda();
+            if (ok) dados = await tentarEntrar();
+            else throw e1;
+          } else {
+            throw e1;
+          }
+        }
+        sessaoComp = {
+          id: dados.id,
+          nome: dados.nome,
+          papel: dados.papel,
+          clienteId: dados.clienteId || clienteId,
+          clienteIdCurto: dados.clienteIdCurto || clienteId.slice(0, 8)
+        };
+        if (sessaoComp.papel === "host") {
+          params.chaveHost = chave;
+          formParametros.chaveHost.value = chave;
+          salvarParametros();
+          marcarEstePcComoHostDaSala(chave);
+        }
+        salvarPrefComp({ nome: sessaoComp.nome, chave: chave, aba: "comp", comoHost: sessaoComp.papel === "host" });
+        quadroComp = dados.quadro || { cards: [], usuarios: [] };
+        receberSalaDoServidor(quadroComp);
+        document.getElementById("painel-compartilhado-login").hidden = true;
+        document.getElementById("toolbar-compartilhado").hidden = false;
+        aplicarParametros();
+        renderCompartilhado();
+        reiniciarPollComp();
+        if (!silencioso) {
+          mostrarToast(
+            "Entrou como " + sessaoComp.id + " - " + sessaoComp.nome +
+            " · id " + sessaoComp.clienteIdCurto +
+            (sessaoComp.papel === "host" ? " (host)" : " (convidado)")
+          );
+        }
+        return true;
+      } catch (e) {
+        if (!silencioso) {
+          const msg = (e && e.message) || "";
+          if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+            mostrarToast(
+              comoHost
+                ? "Sala off. Use Parâmetros → Reativar ou " + dicaAtalhoHost() + "."
+                : "Sala off neste endereço. Peça ao host para ativar ou abra a URL dele."
+            );
+          } else {
+            mostrarToast(msg || "Não entrou no compartilhado.");
+          }
+        }
+        return false;
+      }
+    }
+
+    async function restaurarCompartilhadoAposF5() {
+      const pref = lerPrefComp();
+      if (!pref || pref.aba !== "comp") return;
+      let ativo = await pingCompartilhado();
+      if (!ativo) ativo = await garantirCompartilhadoSobDemanda();
+      if (!ativo) return;
+      if (pref.nome) document.getElementById("comp-nome").value = pref.nome;
+      // NÃO copiar pref.chave para params.chaveHost (falso host).
+      // Chave no campo: host local OU a que o convidado já usou nesta sessão (só para reentrar no F5).
+      const chaveHost = chaveSugeridaParaLogin();
+      const chavePref = (pref.comoHost ? (chaveHost || pref.chave || "") : (pref.chave || "")).trim();
+      if (chavePref) document.getElementById("comp-chave").value = chavePref;
+      else document.getElementById("comp-chave").value = chaveHost || "";
+      mostrarModoCompartilhado({
+        silenciarAvisoOff: true,
+        preencherChaveHost: !!chaveHost,
+        modoConvidado: !chaveHost && !pref.comoHost && !chavePref
+      });
+      if (pref.nome && document.getElementById("comp-chave").value.trim()) {
+        await entrarCompartilhado({ silencioso: true });
+      }
+    }
+
+    async function atualizarCompartilhado() {
+      if (!sessaoComp) return;
+      try {
+        const r = await fetch(apiBase() + "/api/ping", { method: "POST", headers: headersComp(), body: "{}" });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Sessão caiu");
+        receberSalaDoServidor(dados);
+        quadroComp = dados;
+        renderCompartilhado();
+      } catch (e) {
+        mostrarToast(e.message || "Compartilhado indisponível.");
+      }
+    }
+
+    async function sairCompartilhado() {
+      try {
+        if (sessaoComp) {
+          await fetch(apiBase() + "/api/sair", { method: "POST", headers: headersComp(), body: "{}" });
+        }
+      } catch (e) {}
+      sessaoComp = null;
+      if (pollComp) clearInterval(pollComp);
+      pollComp = null;
+      pollCompMsAtual = 0;
+      limparQuadroCompLocal();
+      marcarAbaPreferida("ind");
+      mostrarModoIndividual();
+      mostrarToast("Saiu do compartilhado. Individual intacto.");
+    }
+
+
+    async function descartarCardComp(id) {
+      if (!sessaoComp) return;
+      if (!window.confirm("Descartar este card? Ele sai do quadro compartilhado e vai para Arquivados (fora do relatório).")) return;
+      try {
+        const r = await fetch(apiBase() + "/api/arquivar", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ id: id })
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha ao descartar");
+        quadroComp = dados.quadro;
+        renderCompartilhado();
+        if (document.getElementById("modal-arquivados").dataset.modo === "comp" && !document.getElementById("modal-arquivados").hidden) {
+          renderListaArquivados(true);
+        }
+        mostrarToast("Card descartado no compartilhado.");
+      } catch (e) {
+        mostrarToast(e.message || "Não descartou.");
+      }
+    }
+
+    async function excluirArquivadoComp(id) {
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Só o host exclui arquivados de vez.");
+        return;
+      }
+      if (!window.confirm("Excluir este card permanentemente? Só o host pode fazer isso. Não dá para desfazer.")) return;
+      try {
+        const r = await fetch(apiBase() + "/api/arquivados/excluir", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ id: id })
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        quadroComp = dados.quadro;
+        renderListaArquivados(true);
+        atualizarBotaoArquivados();
+        mostrarToast("Excluído permanentemente (host).");
+      } catch (e) {
+        mostrarToast(e.message || "Não excluiu.");
+      }
+    }
+
+    async function limparArquivadosComp() {
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Só o host limpa todos os arquivados.");
+        return;
+      }
+      if (!window.confirm("Limpar TODOS os arquivados do compartilhado? Só o host. Não dá para desfazer.")) return;
+      try {
+        const r = await fetch(apiBase() + "/api/arquivados/limpar", {
+          method: "POST",
+          headers: headersComp(),
+          body: "{}"
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        quadroComp = dados.quadro;
+        renderListaArquivados(true);
+        atualizarBotaoArquivados();
+        mostrarToast("Arquivados limpos (host).");
+      } catch (e) {
+        mostrarToast(e.message || "Não limpou.");
+      }
+    }
+
+    async function copiarArquivadoComp(id) {
+      if (!sessaoComp) return;
+      try {
+        const r = await fetch(apiBase() + "/api/arquivados/copiar", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ id: id })
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        quadroComp = dados.quadro;
+        renderCompartilhado();
+        renderListaArquivados(true);
+        mostrarToast("Cópia criada no Backlog (data nova). O arquivado permanece.");
+      } catch (e) {
+        mostrarToast(e.message || "Não copiou.");
+      }
+    }
+
+    function criarCardComp() {
+      abrirModalCompartilhado();
+    }
+
+    async function moverCardComp(id, coluna) {
+      if (!sessaoComp) return;
+      try {
+        const r = await fetch(apiBase() + "/api/mover", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ id: id, column: coluna })
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha ao mover");
+        quadroComp = dados.quadro;
+        renderCompartilhado();
+      } catch (e) {
+        mostrarToast(e.message || "Não moveu.");
+      }
+    }
+
+    document.body.classList.add("modo-individual");
+    tabIndividual.addEventListener("click", mostrarModoIndividual);
+    tabCompartilhado.addEventListener("click", function () {
+      aoClicarAbaCompartilhado();
+    });
+    document.getElementById("btn-comp-entrar").addEventListener("click", entrarCompartilhado);
+    document.getElementById("comp-chave").addEventListener("input", atualizarAvisoPapelLogin);
+    document.getElementById("btn-reativar-comp").addEventListener("click", reativarComMesmaChave);
+    document.getElementById("btn-gerar-chave-ativar").addEventListener("click", gerarChaveEAtivar);
+    document.getElementById("btn-copiar-chave").addEventListener("click", copiarChaveHost);
+    document.getElementById("btn-desligar-comp-local").addEventListener("click", desligarCompartilhadoLocal);
+    document.getElementById("btn-comp-sair").addEventListener("click", sairCompartilhado);
+    // Fecha/atualiza a aba: não libera a cadeira na hora (TTL no servidor).
+    // Assim o mesmo navegador (clienteId) reentra na mesma cadeira e pode só corrigir o nome.
+    window.addEventListener("pagehide", function () {
+      if (pollComp) {
+        clearInterval(pollComp);
+        pollComp = null;
+        pollCompMsAtual = 0;
+      }
+    });
+    document.getElementById("btn-comp-novo").addEventListener("click", criarCardComp);
+    document.getElementById("btn-comp-tv").addEventListener("click", ativarModoTv);
+    document.getElementById("btn-comp-relatorio").addEventListener("click", function () { abrirRelatorio(quadroComp.cards || []); });
+    document.getElementById("btn-relatorio").addEventListener("click", function () { abrirRelatorio(state.cards); });
+    document.getElementById("btn-arquivados").addEventListener("click", function () { abrirArquivados(false); });
+    document.getElementById("btn-comp-arquivados").addEventListener("click", function () { abrirArquivados(true); });
+    document.getElementById("btn-arquivados-fechar").addEventListener("click", function () {
+      document.getElementById("modal-arquivados").hidden = true;
+    });
+    document.getElementById("btn-arquivados-limpar-comp").addEventListener("click", limparArquivadosComp);
+    document.getElementById("btn-tv").addEventListener("click", ativarModoTv);
+    document.getElementById("btn-sair-tv").addEventListener("click", sairModoTv);
+    document.getElementById("btn-relatorio-fechar").addEventListener("click", function () {
+      document.getElementById("modal-relatorio").hidden = true;
+    });
+    document.getElementById("btn-historico-fechar").addEventListener("click", function () {
+      document.getElementById("modal-historico").hidden = true;
+    });
+    document.getElementById("btn-relatorio-copiar").addEventListener("click", async function () {
+      try {
+        await navigator.clipboard.writeText(document.getElementById("texto-relatorio").textContent);
+        mostrarToast("Relatório copiado.");
+      } catch (e) {
+        mostrarToast("Selecione o texto e copie manualmente.");
+      }
+    });
+
+    board.addEventListener("dblclick", function (evento) {
+      const cardEl = evento.target.closest(".card");
+      if (!cardEl) return;
+      const card = state.cards.find(function (c) { return c.id === cardEl.dataset.id; });
+      if (card) abrirHistorico(card);
+    });
+
+    boardComp.addEventListener("dragstart", function (evento) {
+      const card = evento.target.closest(".card");
+      if (!card || !sessaoComp) return;
+      evento.dataTransfer.setData("text/plain", card.dataset.id);
+    });
+    boardComp.addEventListener("dragover", function (evento) {
+      if (evento.target.closest(".column")) evento.preventDefault();
+    });
+    boardComp.addEventListener("drop", function (evento) {
+      const coluna = evento.target.closest(".column");
+      if (!coluna || !sessaoComp) return;
+      evento.preventDefault();
+      const id = evento.dataTransfer.getData("text/plain");
+      if (id) moverCardComp(id, coluna.dataset.column);
+    });
+    boardComp.addEventListener("dblclick", async function (evento) {
+      const cardEl = evento.target.closest(".card");
+      if (!cardEl) return;
+      const card = (quadroComp.cards || []).find(function (c) { return c.id === cardEl.dataset.id; });
+      if (!card) return;
+      try {
+        const r = await fetch(apiBase() + "/api/historico/" + encodeURIComponent(card.id));
+        const dados = await r.json();
+        card.historico = dados.historico || [];
+      } catch (e) {
+        card.historico = [];
+      }
+      abrirHistorico(card);
+    });
+
+    document.getElementById("btn-comp-exportar").addEventListener("click", async function () {
+      try {
+        const r = await fetch(apiBase() + "/api/host/exportar", { method: "POST", headers: headersComp(), body: "{}" });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "kanban-compartilhado.json";
+        a.click();
+      } catch (e) {
+        mostrarToast(e.message || "Exportação só do host.");
+      }
+    });
+    document.getElementById("btn-comp-importar").addEventListener("click", function () {
+      document.getElementById("arquivo-comp-json").click();
+    });
+    document.getElementById("arquivo-comp-json").addEventListener("change", async function () {
+      const arquivo = this.files && this.files[0];
+      if (!arquivo) return;
+      try {
+        const texto = await arquivo.text();
+        const r = await fetch(apiBase() + "/api/host/importar", {
+          method: "POST",
+          headers: headersComp(),
+          body: texto
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        quadroComp = dados.quadro;
+        renderCompartilhado();
+        mostrarToast("Quadro compartilhado importado.");
+      } catch (e) {
+        mostrarToast(e.message || "Importação só do host.");
+      }
+    });
+    document.getElementById("btn-comp-limpar-dados").addEventListener("click", async function () {
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Só o host pode limpar os dados da sala.");
+        return;
+      }
+      const n = ((quadroComp && quadroComp.cards) || []).length;
+      if (!n) {
+        mostrarToast("Não há cards na sala para limpar.");
+        return;
+      }
+      const confirma = window.confirm(
+        "LIMPAR DADOS — Sala compartilhada (só host)\n\n" +
+        "• " + n + " card(s) saem do quadro e vão para Arquivados\n" +
+        "• Marcados com a coluna de origem e \"Limpar dados\"\n" +
+        "• Arquivados que já existiam permanecem\n" +
+        "• Parâmetros da sala e Individual não mudam\n\n" +
+        "Continuar?"
+      );
+      if (!confirma) return;
+      try {
+        const r = await fetch(apiBase() + "/api/host/limpar-dados", {
+          method: "POST",
+          headers: headersComp(),
+          body: "{}"
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha ao limpar");
+        quadroComp = dados.quadro;
+        renderCompartilhado();
+        atualizarBotaoArquivados();
+        mostrarToast((dados.limpos || n) + " card(s) arquivado(s) pelo Limpar dados.");
+      } catch (e) {
+        mostrarToast(e.message || "Não limpou a sala.");
+      }
+    });
+
+    document.getElementById("btn-param-comp-padrao").addEventListener("click", async function () {
+      if (!sessaoComp || sessaoComp.papel !== "host") {
+        mostrarToast("Só o host volta a sala ao padrão.");
+        return;
+      }
+      const confirma = window.confirm(
+        "VOLTAR AO PADRÃO — Sala compartilhada (zera a sala, só host)\n\n" +
+        "Isto limpa TUDO da sala e joga os exemplos de volta:\n" +
+        "• Apaga TODOS os cards do quadro\n" +
+        "• Apaga TODOS os arquivados da sala\n" +
+        "• Restaura os cards de exemplo\n" +
+        "• Restaura título, cores, SLA e ping padrão da sala\n\n" +
+        "Não mexe no Individual de ninguém.\n" +
+        "A pasta compartilhado/backup fica ilesa (ainda grava uma cópia antes do reset).\n\n" +
+        "Se quiser guardar, cancele e use Exportar (host) antes.\n\n" +
+        "Continuar e zerar a sala?"
+      );
+      if (!confirma) return;
+      try {
+        const r = await fetch(apiBase() + "/api/host/padrao", {
+          method: "POST",
+          headers: headersComp(),
+          body: JSON.stringify({ cards: exemplos() })
+        });
+        const dados = await r.json();
+        if (!r.ok) throw new Error(dados.erro || "Falha");
+        quadroComp = dados.quadro;
+        receberSalaDoServidor(quadroComp);
+        aplicarParametros();
+        preencherFormParametrosComp();
+        renderCompartilhado();
+        atualizarBotaoArquivados();
+        fecharParametrosComp();
+        mostrarToast("Sala zerada: exemplos e visual padrão de volta.");
+      } catch (e) {
+        mostrarToast(e.message || "Só o host reseta a sala.");
+      }
+    });
+
+    const escAntigo = document.onkeydown;
+    document.addEventListener("keydown", function (evento) {
+      if (evento.key === "Escape" && document.body.classList.contains("tv-mode")) {
+        sairModoTv();
+      }
+    });
+
+    const btnDesligarGeral = document.getElementById("btn-desligar-geral");
+    if (btnDesligarGeral) {
+      btnDesligarGeral.addEventListener("click", desligarAplicacaoKanban);
+    }
+    atualizarBotaoDesligarGeral();
+    if (appMarcadaDesligadaNoCache()) {
+      marcarAppDesligadaVisual();
+    }
+    reconciliarTelaDesligada();
+
+    aplicarParametros();
+    render();
+    salvar();
+    iniciarMonitorCompartilhado();
+    restaurarCompartilhadoAposF5();
+  </script>
+</body>
+</html>

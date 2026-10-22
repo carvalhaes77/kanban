@@ -1,0 +1,25 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
+.env
+.env.*
+node_modules/
+
+# Apoio local de gestão. Não vai para o repositório público.
+apoio-gestao-ti/
+
+# Atalhos locais de conveniência (os .cmd do projeto ficam versionados).
+kanban-ti-visivel-demo.url
+Subir Kanban.lnk
+Parar Kanban.lnk
+Ativar Compartilhado.lnk
+Parar Compartilhado.lnk
+
+# Dados locais do compartilhado (SQLite, chave host, backups)
+compartilhado/dados/
+compartilhado/backup/
+__pycache__/
+*.pyc
